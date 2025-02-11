@@ -1,4 +1,8 @@
 .title_page {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 10px 0;
     background: rgb(100,25,117);
     background: linear-gradient(133deg, rgba(100,25,117,1) 15%, rgba(249,249,249,1) 48%, rgba(233,236,107,1) 82%);
 }
