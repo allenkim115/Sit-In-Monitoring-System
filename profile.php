@@ -21,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Update user information
     $sql = "UPDATE user SET LASTNAME = ?, FIRSTNAME = ?, MIDDLENAME = ?, COURSE = ?, YEAR_LEVEL = ?, USERNAME = ? WHERE IDNO = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssissi", $lastname, $firstname, $midname, $course, $year_lvl, $username, $idno);
+    $stmt->bind_param("ssssisi", $lastname, $firstname, $midname, $course, $year_lvl, $username, $idno);
     $stmt->execute();
 
     // Check if password reset is requested
@@ -32,11 +32,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_param("si", $hashed_password, $idno);
         $stmt->execute();
     }
-
+    
     // Handle profile picture upload
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] == UPLOAD_ERR_OK) {
         $target_dir = "uploads/";
-        $target_file = $target_dir . basename($_FILES["profile_pic"]["name"]);
+        $unique_name = uniqid() . "_" . basename($_FILES["profile_pic"]["name"]);
+        $target_file = $target_dir . $unique_name;
         move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $target_file);
 
         // Update profile picture path in the database
@@ -79,12 +80,16 @@ unset($_SESSION['update_success']);
         .home:hover {
             color: rgba(233,236,107,1); /* White text */
         }
+        img{  
+            border: 2px solid rgba(100,25,117,1);
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
 <div class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left" style="width:20%;" id="mySidebar">
   <button class="w3-bar-item w3-button w3-large w3-hide-large w3-center" onclick="w3_close()"><i class="fa-solid fa-x"></i></button>
-  <div class="profile w3-center">
+  <div class="profile w3-center w3-margin w3-padding">
     <?php
     $profile_pic = isset($user['PROFILE_PIC']) ? $user['PROFILE_PIC'] : 'images/default_pic.png';
     ?>
@@ -116,6 +121,9 @@ unset($_SESSION['update_success']);
         <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 75%; margin:auto; background-color:#ffff;">
             <form action="profile.php" method="POST" enctype="multipart/form-data">
                 <h2 class="w3-padding" style="text-transform: uppercase; font-weight: 600;"><a href="dashboard.php" class="w3-button"><i class="fa-solid fa-arrow-left"></i></a>Edit Profile</h2>
+                <div style="text-align: center;" class="profile w3-padding w3-margin">
+                    <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 120px; height:120px;"><br>
+                </div>
                 <label for="profile_pic">Profile Pic:</label>
                 <input type="file" name="profile_pic" class="w3-input w3-border w3-round"><br>
                 <label for="IDNO">IDNO:</label>
@@ -129,9 +137,9 @@ unset($_SESSION['update_success']);
                 <label for="course">Course:</label>
                 <select class="w3-input w3-border w3-round w3-select" name="course" required>
                     <option value="" disabled>Course</option>
-                    <option value="1" <?php if ($user['COURSE'] == 1) echo 'selected'; ?>>BSIT</option>
-                    <option value="2" <?php if ($user['COURSE'] == 2) echo 'selected'; ?>>BSCS</option>
-                    <option value="3" <?php if ($user['COURSE'] == 3) echo 'selected'; ?>>BSCpE</option>
+                    <option value="BSIT" <?php if ($user['COURSE'] == 'BSIT') echo 'selected'; ?>>BSIT</option>
+                    <option value="BSCS" <?php if ($user['COURSE'] == 'BSCS') echo 'selected'; ?>>BSCS</option>
+                    <option value="BSCpE" <?php if ($user['COURSE'] == 'BSCpE') echo 'selected'; ?>>BSCpE</option>
                 </select><br>
                 <label for="year_lvl">Year Level:</label>
                 <select class="w3-input w3-border w3-round w3-select" name="year_lvl" required>

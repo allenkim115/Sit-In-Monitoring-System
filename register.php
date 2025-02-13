@@ -35,9 +35,9 @@
                 <input type="text" name="midname" placeholder="Middlename" class="w3-input w3-border w3-round"><br>
                 <select class=" w3-input w3-border w3-round w3-select" name="course" required>
                     <option value=""disabled selected>Course</option>
-                    <option value="1">BSIT</option>
-                    <option value="2">BSCS</option>
-                    <option value="3">BSCpE</option>
+                    <option value="BSIT">BSIT</option>
+                    <option value="BSCS">BSCS</option>
+                    <option value="BSCpE">BSCpE</option>
                   </select><br>
                 <select class=" w3-input w3-border w3-round w3-select" name="year_lvl" required>
                     <option value=""disabled selected>Year Level</option>

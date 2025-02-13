@@ -17,11 +17,17 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <link rel="stylesheet" href="side_nav.css">
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
     <title>Dashboard</title>
+    <style>
+      img{  
+        border: 2px solid rgba(100,25,117,1);
+        border-radius: 50%;
+        }
+    </style>
 </head>
 <body>
 <div class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left" style="width:20%;" id="mySidebar">
   <button class="w3-bar-item w3-button w3-large w3-hide-large w3-center" onclick="w3_close()"><i class="fa-solid fa-x"></i></button>
-  <div class="profile w3-center">
+  <div class="profile w3-center w3-margin w3-padding">
     <?php
     $profile_pic = isset($user['PROFILE_PIC']) ? $user['PROFILE_PIC'] : 'images/default_pic.png';
     ?>
@@ -45,8 +51,45 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
   </div>
 </div>
 
-<div class="w3-container">
-  <h3>Welcome to CCS Sit-in Monitoring System</h3>
+<div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 50%; margin:auto; margin-top: 5%; background-color:#fcfbfc;">
+    <div class="w3-center w3-margin w3-padding" style="margin-bottom:0;">
+        <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 150px; height:150px;">
+    </div>
+    <div class="w3-center w3-padding">
+        <h2 id="welcome-text">Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?></h2>
+        <p id="typing-text" style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 10px;">to CSS Sit-In Monitoring System</p>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+          const welcomeText = "Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?>";
+          const typingText = "to CSS Sit-In Monitoring System";
+          let index = 0;
+          const typingSpeed = 60; // Adjust typing speed here
+
+          function typeWelcome() {
+              if (index < welcomeText.length) {
+            document.getElementById("welcome-text").innerHTML += welcomeText.charAt(index);
+            index++;
+            setTimeout(typeWelcome, typingSpeed);
+              } else {
+            index = 0;
+            typeTypingText();
+              }
+          }
+
+          function typeTypingText() {
+              if (index < typingText.length) {
+            document.getElementById("typing-text").innerHTML += typingText.charAt(index);
+            index++;
+            setTimeout(typeTypingText, typingSpeed);
+              }
+          }
+
+          document.getElementById("welcome-text").innerHTML = "";
+          document.getElementById("typing-text").innerHTML = "";
+          typeWelcome();
+            });
+        </script>
+    </div>
 </div>
    
 </div>
