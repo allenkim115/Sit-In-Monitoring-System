@@ -33,7 +33,8 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     ?>
     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
   </div>
-  <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
+  <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
+  <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-hourglass-start w3-padding"></i><span>View Remaining Session</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-book-open w3-padding"></i><span>Sit-in Rules</span></a>
@@ -48,6 +49,28 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
   <button class="w3-button w3-teal w3-xlarge w3-hide-large" onclick="w3_open()">&#9776;</button>
   <div class="title_page w3-container">
     <h1><a href="dashboard.php"></a>Dashboard</h1>
+  </div>
+</div>
+<div id="profile" class="w3-modal">
+  <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
+    <header class="w3-container"> 
+    <span onclick="document.getElementById('profile').style.display='none'" 
+    class="w3-button w3-display-topright">&times;</span>
+    <h2 style="text-transform:uppercase;">Profile</h2>
+    </header>
+    <div class="display_photo w3-container w3-center">
+    <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 120px; height:120px; border-radius: 50%; border: 2px solid rgba(100,25,117,1);">
+    </div>
+    <hr style="margin: 1rem 10%; border-width: 2px;">
+    <div class="w3-container" style="margin: 0 10%;">
+    <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($user['IDNO']); ?></p>
+    <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
+    <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
+    <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
+    </div>
+    <footer class="w3-container w3-padding" style="margin: 0 30%;">
+    <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
+    </footer>
   </div>
 </div>
 

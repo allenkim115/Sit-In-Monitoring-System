@@ -95,7 +95,8 @@ unset($_SESSION['update_success']);
     ?>
     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
   </div>
-  <a href="profile.php" class="w3-bar-item w3-button active"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
+  <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
+  <a href="profile.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-hourglass-start w3-padding"></i><span>View Remaining Session</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-book-open w3-padding"></i><span>Sit-in Rules</span></a>
@@ -111,6 +112,28 @@ unset($_SESSION['update_success']);
     <h1><a class="home" href="dashboard.php" style="text-decoration:none;">Dashboard</a></h1>
     </div>
     </div>
+<div id="profile" class="w3-modal">
+  <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
+    <header class="w3-container"> 
+    <span onclick="document.getElementById('profile').style.display='none'" 
+    class="w3-button w3-display-topright">&times;</span>
+    <h2 style="text-transform:uppercase;">Profile</h2>
+    </header>
+    <div class="display_photo w3-container w3-center">
+    <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 120px; height:120px; border-radius: 50%; border: 2px solid rgba(100,25,117,1);">
+    </div>
+    <hr style="margin: 1rem 10%; border-width: 2px;">
+    <div class="w3-container" style="margin: 0 10%;">
+    <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($user['IDNO']); ?></p>
+    <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
+    <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
+    <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
+    </div>
+    <footer class="w3-container w3-padding" style="margin: 0 30%;">
+    <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
+    </footer>
+  </div>
+</div>
     <div class="container w3-container w3-margin">
         <?php if ($update_success): ?>
             <div class="w3-panel w3-green w3-display-container" id="successMessage">
@@ -158,7 +181,7 @@ unset($_SESSION['update_success']);
                     <label for="ConfirmPass">Confirm New Passrword:</label>
                     <input type="password" name="confirm_password" placeholder="Confirm New Password" class="w3-input w3-border w3-round"><br>
                 </div>
-                <button type="submit" class="w3-input w3-blue w3-round-xlarge w3-center w3-padding w3-margin" name="SaveEdit" style="width: 25%;">Save Changes</button><br>
+                <button type="submit" class="w3-input w3-purple w3-round-xlarge w3-center w3-padding w3-margin" name="SaveEdit" style="width: 25%;">Save Changes</button><br>
             </form>
         </div>
     </div>

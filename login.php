@@ -25,7 +25,7 @@
                 <h2 class="w3-center" style="font-weight: 600;">CCS Sit-in Monitoring System</h2>
                 <input type="text" name="username" placeholder="Username" class="w3-input w3-border w3-round" required><br>
                 <input type="password" name="password" placeholder="Password" class="w3-input w3-border w3-round" required><br>
-                <button type="submit"  class="w3-btn w3-blue w3-round-xlarge" style="width: 30%;" name="Login">Login</button><br>
+                <button type="submit"  class="w3-btn w3-purple w3-round-xlarge" style="width: 30%;" name="Login">Login</button><br>
                 <p class="w3-center">Don't have an account? <a style="color: blue; text-decoration:none;" href="register.php">Register here.</a></p>
             </form>
         </div>

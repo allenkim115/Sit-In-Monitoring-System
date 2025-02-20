@@ -49,7 +49,7 @@
                 <input type="text" name="username" placeholder="Username" class="w3-input w3-border w3-round" required><br>
                 <input type="password" name="password" placeholder="Password" class="w3-input w3-border w3-round" required><br>
                 <input type="password" name="confirm_password" placeholder="Confirm Password" class="w3-input w3-border w3-round" required><br>
-                <button type="submit"  class="w3-input w3-blue w3-round-xlarge w3-center" name="Register">Register</button><br>
+                <button type="submit"  class="w3-input w3-purple w3-round-xlarge w3-center" name="Register">Register</button><br>
                 <p class="w3-center" style="margin: 0; padding: 0;">Already have an account? <a style="color: blue; text-decoration:none;" href="login.php">Login Here.</a></p>
             </form>
         </div>
