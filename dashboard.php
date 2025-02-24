@@ -1,8 +1,8 @@
 <?php
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header('Location: login.php');
-    exit;
+  header('Location: login.php');
+  exit;
 }
 
 // Retrieve user data from the session
@@ -26,13 +26,14 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 </head>
 <body>
 <div class="w3-sidebar w3-bar-block w3-collapse w3-card w3-animate-left" style="width:20%;" id="mySidebar">
-  <button class="w3-bar-item w3-button w3-large w3-hide-large w3-center" onclick="w3_close()"><i class="fa-solid fa-x"></i></button>
+  <button class="w3-bar-item w3-button w3-large w3-hide-large w3-center" onclick="w3_close()"><i class="fa-solid fa-arrow-left"></i></button>
   <div class="profile w3-center w3-margin w3-padding">
     <?php
     $profile_pic = isset($user['PROFILE_PIC']) ? $user['PROFILE_PIC'] : 'images/default_pic.png';
     ?>
     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
   </div>
+  <a href="dashboard.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
   <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
   <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
@@ -41,17 +42,9 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
   <a href="#" class="w3-bar-item w3-button"><i class="fa-brands fa-readme w3-padding"></i><span>Lab Rules & Regulation</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clock-rotate-left w3-padding"></i><span>History</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
-  <a href="login.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
+  <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
 </div>
-
-<div class="w3-main" style="margin-left:20%">
-<div class="w3-teal">
-  <button class="w3-button w3-teal w3-xlarge w3-hide-large" onclick="w3_open()">&#9776;</button>
-  <div class="title_page w3-container">
-    <h1><a href="dashboard.php"></a>Dashboard</h1>
-  </div>
-</div>
-<div id="profile" class="w3-modal">
+<div id="profile" class="w3-modal" style="z-index: 1000;">
   <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
     <header class="w3-container"> 
     <span onclick="document.getElementById('profile').style.display='none'" 
@@ -71,6 +64,12 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <footer class="w3-container w3-padding" style="margin: 0 30%;">
     <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
     </footer>
+  </div>
+</div>
+<div style="margin-left:20%; z-index: 1; position: relative;">
+  <div class="title_page w3-container" style="display: flex; align-items: center;">
+    <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
+    <h1 style="margin-left: 10px; color: #ffff;">Dashboard</h1>
   </div>
 </div>
 

@@ -66,6 +66,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $user = $_SESSION['user'];
 $update_success = isset($_SESSION['update_success']) ? $_SESSION['update_success'] : '';
 unset($_SESSION['update_success']);
+
+// Retrieve user data from the session
+$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,9 +95,10 @@ unset($_SESSION['update_success']);
   <div class="profile w3-center w3-margin w3-padding">
     <?php
     $profile_pic = isset($user['PROFILE_PIC']) ? $user['PROFILE_PIC'] : 'images/default_pic.png';
-    ?>
+    ?>  
     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
   </div>
+  <a href="dashboard.php" class="w3-bar-item w3-button"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
   <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
   <a href="profile.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
@@ -103,16 +107,16 @@ unset($_SESSION['update_success']);
   <a href="#" class="w3-bar-item w3-button"><i class="fa-brands fa-readme w3-padding"></i><span>Lab Rules & Regulation</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clock-rotate-left w3-padding"></i><span>History</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
-  <a href="login.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
+  <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
 </div>
 <div class="w3-main" style="margin-left:20%">
     <div class="w3-teal">
         <button class="w3-button w3-teal w3-xlarge w3-hide-large" onclick="w3_open()">&#9776;</button>
     <div class="title_page w3-container">
-    <h1><a class="home" href="dashboard.php" style="text-decoration:none;">Dashboard</a></h1>
+    <h1><a href="dashboard.php" class="w3-button"><i class="fa-solid fa-arrow-left"></i></a>Edit Profile</a></h1>
     </div>
-    </div>
-<div id="profile" class="w3-modal">
+</div>
+<div id="profile" class="w3-modal" style="z-index: 1000;">
   <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
     <header class="w3-container"> 
     <span onclick="document.getElementById('profile').style.display='none'" 
@@ -130,7 +134,7 @@ unset($_SESSION['update_success']);
     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
     </div>
     <footer class="w3-container w3-padding" style="margin: 0 30%;">
-    <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
+        <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
     </footer>
   </div>
 </div>
@@ -143,7 +147,6 @@ unset($_SESSION['update_success']);
         <?php endif; ?>
         <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 75%; margin:auto; background-color:#ffff;">
             <form action="profile.php" method="POST" enctype="multipart/form-data">
-                <h2 class="w3-padding" style="text-transform: uppercase; font-weight: 600;"><a href="dashboard.php" class="w3-button"><i class="fa-solid fa-arrow-left"></i></a>Edit Profile</h2>
                 <div style="text-align: center;" class="profile w3-padding w3-margin">
                     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 120px; height:120px;"><br>
                 </div>
