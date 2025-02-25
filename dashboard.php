@@ -36,10 +36,6 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
   <a href="dashboard.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
   <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
   <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-hourglass-start w3-padding"></i><span>View Remaining Session</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-book-open w3-padding"></i><span>Sit-in Rules</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-brands fa-readme w3-padding"></i><span>Lab Rules & Regulation</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clock-rotate-left w3-padding"></i><span>History</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
   <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
@@ -60,6 +56,7 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
+    <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong></p>
     </div>
     <footer class="w3-container w3-padding" style="margin: 0 30%;">
     <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
@@ -71,50 +68,101 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
     <h1 style="margin-left: 10px; color: #ffff;">Dashboard</h1>
   </div>
-</div>
-
-<div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 50%; margin:auto; margin-top: 5%; background-color:#fcfbfc;">
-    <div class="w3-center w3-margin w3-padding" style="margin-bottom:0;">
-        <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 150px; height:150px;">
-    </div>
-    <div class="w3-center w3-padding">
-        <h2 id="welcome-text">Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?></h2>
-        <p id="typing-text" style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 10px;">to CSS Sit-In Monitoring System</p>
+  <div class="w3-row-padding" style="margin: 5% 10px;">
+    <div class="w3-col m6">
+      <!-----Welcome Message----->
+      <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="margin-bottom: 30px; width: 100%;">
+        <div class="w3-center w3-margin w3-padding" style="margin-bottom:0; display: flex; align-items: center; justify-content: center;">
+          <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 150px; height:150px; margin-right: 20px;">
+          <div>
+            <h2 id="welcome-text">Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?></h2>
+            <p id="typing-text" style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 10px;">to CSS Sit-In Monitoring System</p>
+          </div>
+        </div>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-          const welcomeText = "Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?>";
-          const typingText = "to CSS Sit-In Monitoring System";
-          let index = 0;
-          const typingSpeed = 60; // Adjust typing speed here
+          document.addEventListener('DOMContentLoaded', function() {
+            const welcomeText = "Welcome, <?php echo htmlspecialchars($user['FIRSTNAME']); ?>";
+            const typingText = "to CSS Sit-In Monitoring System";
+            let index = 0;
+            const typingSpeed = 60; // Adjust typing speed here
 
-          function typeWelcome() {
+            function typeWelcome() {
               if (index < welcomeText.length) {
-            document.getElementById("welcome-text").innerHTML += welcomeText.charAt(index);
-            index++;
-            setTimeout(typeWelcome, typingSpeed);
+                document.getElementById("welcome-text").innerHTML += welcomeText.charAt(index);
+                index++;
+                setTimeout(typeWelcome, typingSpeed);
               } else {
-            index = 0;
-            typeTypingText();
+                index = 0;
+                typeTypingText();
               }
-          }
+            }
 
-          function typeTypingText() {
+            function typeTypingText() {
               if (index < typingText.length) {
-            document.getElementById("typing-text").innerHTML += typingText.charAt(index);
-            index++;
-            setTimeout(typeTypingText, typingSpeed);
+                document.getElementById("typing-text").innerHTML += typingText.charAt(index);
+                index++;
+                setTimeout(typeTypingText, typingSpeed);
               }
-          }
+            }
 
-          document.getElementById("welcome-text").innerHTML = "";
-          document.getElementById("typing-text").innerHTML = "";
-          typeWelcome();
-            });
+            document.getElementById("welcome-text").innerHTML = "";
+            document.getElementById("typing-text").innerHTML = "";
+            typeWelcome();
+          });
         </script>
-    </div>
+      </div>
+      <!---Announcement---->
+      <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-margin-bottom w3-animate-top" style="width: 100%;">
+        <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
+          <i class="fa-solid fa-bullhorn"></i>
+          <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
+        </div>
+        <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
+      </div>
+        </div>
+        <div class="w3-col m6"> 
+<div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 400px; overflow-y: auto;">
+  <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
+    <h3><i class="fa-brands fa-readme w3-padding"></i>Rules and Regulation</h3>
+  </div>
+  <br>
+  <div class="w3-center">
+    <h4>University of Cebu</h4>
+    <h4>COLLEGE OF INFORMATION & COMPUTER STUDIES</h4>
+  </div>
+  <br>
+  <h4>LABORATORY RULES AND REGULATIONS</h4>
+  <p>To avoid embarrassment and maintain camaraderie with your friends and superiors at our laboratories, please observe the following:</p>
+  
+  <ul>
+    <li>1. Maintain silence, proper decorum, and discipline inside the laboratory. Mobile phones, walkmans, and other personal pieces of equipment must be switched off.</li>
+    <li>2. Games are not allowed inside the lab. This includes computer-related games, card games, and other games that may disturb the operation of the lab.</li>
+    <li>3. Surfing the Internet is allowed only with the permission of the instructor. Downloading and installing of software are strictly prohibited.</li>
+    <li>4. Getting access to other websites not related to the course (especially pornographic and illicit sites) is strictly prohibited.</li>
+    <li>5. Deleting computer files and changing the set-up of the computer is a major offense.</li>
+    <li>6. Observe computer time usage carefully. A fifteen-minute allowance is given for each use. Otherwise, the unit will be given to those who wish to "sit-in".</li>
+    <li>7. Observe proper decorum while inside the laboratory.</li>
+    <ul>
+      <li>Do not get inside the lab unless the instructor is present.</li>
+      <li>All bags, knapsacks, and the likes must be deposited at the counter.</li>
+      <li>Follow the seating arrangement of your instructor.</li>
+      <li>At the end of class, all software programs must be closed.</li>
+      <li>Return all chairs to their proper places after using.</li>
+    </ul>
+    <li>8. Chewing gum, eating, drinking, smoking, and other forms of vandalism are prohibited inside the lab.</li>
+    <li>9. Anyone causing a continual disturbance will be asked to leave the lab. Acts or gestures offensive to the members of the community, including public display of physical intimacy, are not tolerated.</li>
+    <li>10. Persons exhibiting hostile or threatening behavior such as yelling, swearing, or disregarding requests made by lab personnel will be asked to leave the lab.</li>
+    <li>11. For serious offense, the lab personnel may call the Civil Security Office (CSU) for assistance.</li>
+    <li>12. Any technical problem or difficulty must be addressed to the laboratory supervisor, student assistant, or instructor immediately.</li>
+  </ul>
+
+  <h4>DISCIPLINARY ACTION</h4>
+  <ul>
+    <li>First Offense - The Head or the Dean or OIC recommends to the Guidance Center for a suspension from classes for each offender.</li>
+    <li>Second and Subsequent Offenses - A recommendation for a heavier sanction will be endorsed to the Guidance Center.</li>
+  </ul>
 </div>
-   
-</div>
+
 <script>
 function w3_open() {
     document.getElementById("mySidebar").style.display = "block";

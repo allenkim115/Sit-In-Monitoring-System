@@ -78,7 +78,7 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="side_nav.css">
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
-    <title>Document</title>
+    <title>Edit Profile</title>
     <style>
         .home:hover {
             color: rgba(233,236,107,1); /* White text */
@@ -101,10 +101,6 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
   <a href="dashboard.php" class="w3-bar-item w3-button"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
   <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
   <a href="profile.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-volume-high w3-padding"></i><span>View Announcement</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-hourglass-start w3-padding"></i><span>View Remaining Session</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-book-open w3-padding"></i><span>Sit-in Rules</span></a>
-  <a href="#" class="w3-bar-item w3-button"><i class="fa-brands fa-readme w3-padding"></i><span>Lab Rules & Regulation</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clock-rotate-left w3-padding"></i><span>History</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
   <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
