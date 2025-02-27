@@ -22,6 +22,10 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
         border: 2px solid rgba(100,25,117,1);
         border-radius: 50%;
         }
+        ul li{
+          list-style-type: none;
+          padding: 5px;
+        }
     </style>
 </head>
 <body>
@@ -56,7 +60,7 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
-    <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong></p>
+    <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong>30</p>
     </div>
     <footer class="w3-container w3-padding" style="margin: 0 30%;">
     <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
@@ -121,11 +125,12 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
       </div>
         </div>
         <div class="w3-col m6"> 
-<div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 400px; overflow-y: auto;">
+<div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 450px;">
   <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
     <h3><i class="fa-brands fa-readme w3-padding"></i>Rules and Regulation</h3>
   </div>
   <br>
+  <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container" style="height:350px; overflow-y: auto;">
   <div class="w3-center">
     <h4>University of Cebu</h4>
     <h4>COLLEGE OF INFORMATION & COMPUTER STUDIES</h4>
@@ -143,11 +148,11 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <li>6. Observe computer time usage carefully. A fifteen-minute allowance is given for each use. Otherwise, the unit will be given to those who wish to "sit-in".</li>
     <li>7. Observe proper decorum while inside the laboratory.</li>
     <ul>
-      <li>Do not get inside the lab unless the instructor is present.</li>
-      <li>All bags, knapsacks, and the likes must be deposited at the counter.</li>
-      <li>Follow the seating arrangement of your instructor.</li>
-      <li>At the end of class, all software programs must be closed.</li>
-      <li>Return all chairs to their proper places after using.</li>
+      <li>a. Do not get inside the lab unless the instructor is present.</li>
+      <li>b. All bags, knapsacks, and the likes must be deposited at the counter.</li>
+      <li>c. Follow the seating arrangement of your instructor.</li>
+      <li>d. At the end of class, all software programs must be closed.</li>
+      <li>e. Return all chairs to their proper places after using.</li>
     </ul>
     <li>8. Chewing gum, eating, drinking, smoking, and other forms of vandalism are prohibited inside the lab.</li>
     <li>9. Anyone causing a continual disturbance will be asked to leave the lab. Acts or gestures offensive to the members of the community, including public display of physical intimacy, are not tolerated.</li>
@@ -161,6 +166,7 @@ $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
     <li>First Offense - The Head or the Dean or OIC recommends to the Guidance Center for a suspension from classes for each offender.</li>
     <li>Second and Subsequent Offenses - A recommendation for a heavier sanction will be endorsed to the Guidance Center.</li>
   </ul>
+</div>
 </div>
 
 <script>
