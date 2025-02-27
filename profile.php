@@ -37,8 +37,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] == UPLOAD_ERR_OK) {
         $target_dir = "uploads/";
         $unique_name = uniqid() . "_" . basename($_FILES["profile_pic"]["name"]);
+        $allowed_type = ['jpg', 'jpeg', 'png', 'gif'];
         $target_file = $target_dir . $unique_name;
         move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $target_file);
+
+        if (!in_array(pathinfo($target_file, PATHINFO_EXTENSION), $allowed_type)) {
+            $_SESSION['update_success'] = "Invalid file type. Please upload a valid image file.(jpg, jpeg, png, gif)";
+            header("Location: profile.php");
+            exit();
+        }
 
         // Update profile picture path in the database
         $sql = "UPDATE user SET PROFILE_PIC = ? WHERE IDNO = ?";
