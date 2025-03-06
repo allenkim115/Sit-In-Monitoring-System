@@ -1,3 +1,47 @@
+<?php
+include 'connect.php';
+session_start();
+
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    header('Location: login.php');
+    exit;
+}
+
+//get the profile picture from database
+$username = $_SESSION['user']['USERNAME']; // Assuming you store username in session
+$sql_profile = "SELECT PROFILE_PIC FROM user WHERE USERNAME = ?";
+$stmt_profile = $conn->prepare($sql_profile);
+$stmt_profile->bind_param("s", $username);
+$stmt_profile->execute();
+$result_profile = $stmt_profile->get_result();
+$user = $result_profile->fetch_assoc();
+
+// Handle announcement posting
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['announcement_message'])) {
+    $message = mysqli_real_escape_string($conn, $_POST['announcement_message']);
+    if (!empty($message)) {
+        $sql = "INSERT INTO announcement (message) VALUES (?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $message);
+        if (!$stmt->execute()) {
+            echo "Error: " . $stmt->error; // Consider better error handling
+        }
+        $stmt->close();
+    }
+}
+
+// Fetch announcements
+$sql_announcements = "SELECT * FROM announcement ORDER BY timestamp DESC"; // Get most recent first
+$result_announcements = $conn->query($sql_announcements);
+$announcements = [];
+if($result_announcements->num_rows > 0){
+    while ($row = $result_announcements->fetch_assoc()){
+        $announcements[] = $row;
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +61,7 @@
     ?>
     <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
   </div>
-  <a href="dashboard.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
+  <a href="admin.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-magnifying-glass w3-padding"></i><span>Search</span></a>
   <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-user w3-padding"></i><span>Students</span></a>
   <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
@@ -40,7 +84,22 @@
             <i class="fa-solid fa-bullhorn"></i>
             <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
             </div>
-            <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
+            <form method="POST" class="w3-margin-top">
+                <textarea name="announcement_message" class="w3-input w3-border" placeholder="Type your announcement here..." rows="4"></textarea>
+                <button type="submit" class="w3-button w3-purple w3-margin-top">Post Announcement</button>
+            </form>
+            <div id="announcements-list" class="w3-margin-top">
+                <?php if (count($announcements) > 0): ?>
+                    <?php foreach ($announcements as $announcement): ?>
+                        <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
+                            <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
+                            <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
+                <?php endif; ?>
+            </div>
         </div>
             </div>
     <div class="w3-col m6"> 
