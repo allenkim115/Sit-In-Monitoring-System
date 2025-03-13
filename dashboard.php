@@ -19,6 +19,13 @@ if($result_announcements->num_rows > 0){
     }
 }
 
+//get the session count from database
+$sql_session = "SELECT SESSION_COUNT FROM user WHERE IDNO = ?";
+$stmt_session = $conn->prepare($sql_session);
+$stmt_session->bind_param("s", $user['IDNO']);
+$stmt_session->execute();
+$result_session = $stmt_session->get_result()->fetch_assoc();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -72,7 +79,7 @@ if($result_announcements->num_rows > 0){
             <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
             <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
             <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
-            <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong>30</p>
+            <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong><?php echo htmlspecialchars($result_session['SESSION_COUNT']); ?></p>
         </div>
         <footer class="w3-container w3-padding" style="margin: 0 30%;">
             <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
