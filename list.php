@@ -246,10 +246,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                     <div class="w3-container" style="margin: 0 10%;">
                         <form method="POST">
                             <input type="hidden" name="add_sitin_user_id" value="<?php echo $student_found['IDNO']; ?>">
-                            <label for="purpose">Purpose:</label>
-                            <input type="text" id="purpose" name="purpose" class="w3-input w3-border" required><br>
-                            <label for="laboratory">Laboratory:</label>
-                            <input type="text" id="laboratory" name="laboratory" class="w3-input w3-border" required><br>
+                            <label for="purpose">Purpose:</label><br>
+                            <select id="purpose" name="purpose" class="w3-input w3-border" required>
+                                <option value="" disabled selected hidden>Select Purpose</option>
+                                <option value="PHP Programming">PHP Programming</option>
+                                <option value="C Programming">C Programming</option>
+                                <option value="C++ Programming">C++ Programming</option>
+                                <option value="Java Programming">Java Programming</option>
+                                <option value=".Net Programming">.Net Programming</option>
+                                <option value="Others">Others</option>
+                            </select><br>
+                            <label for="laboratory">Laboratory:</label><br>
+                            <select id="laboratory" name="laboratory" class="w3-input w3-border" required>
+                                <option value="" disabled selected hidden>Select Laboratory</option>
+                                <option value="524">524</option>
+                                <option value="526">526</option>
+                                <option value="528">528</option>
+                                <option value="530">530</option>
+                                <option value="542">542</option>
+                                <option value="544">544</option>
+                            </select><br>
                             <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Add Sit-in</button>
                         </form>
                     </div>

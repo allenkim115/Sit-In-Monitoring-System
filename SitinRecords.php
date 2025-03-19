@@ -1,6 +1,4 @@
 <?php
-
-
 include 'connect.php';
 session_start();
 
@@ -9,21 +7,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_
     header('Location: login.php');
     exit;
 }
-
-// Fetch student counts by course
-$sql_course_counts = "SELECT COURSE, COUNT(*) as count FROM user GROUP BY COURSE";
-$result_course_counts = $conn->query($sql_course_counts);
-$course_counts = [];
-if ($result_course_counts->num_rows > 0) {
-    while ($row = $result_course_counts->fetch_assoc()) {
-        $course_counts[$row['COURSE']] = $row['count'];
-    }
-}
-
-// Prepare data for the pie chart
-$chart_labels = json_encode(array_keys($course_counts));
-$chart_data = json_encode(array_values($course_counts));
-
 
 //get the profile picture from database
 $username = $_SESSION['user']['USERNAME']; // Assuming you store username in session
@@ -34,84 +17,16 @@ $stmt_profile->execute();
 $result_profile = $stmt_profile->get_result();
 $user = $result_profile->fetch_assoc();
 
-// Handle announcement posting
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['announcement_message'])) {
-    $message = mysqli_real_escape_string($conn, $_POST['announcement_message']);
-    if (!empty($message)) {
-        $sql = "INSERT INTO announcement (message) VALUES (?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $message);
-        if (!$stmt->execute()) {
-            echo "Error: " . $stmt->error; // Consider better error handling
-        }
-        $stmt->close();
-    }
-    header("Location: admin.php");
-    exit;
-}
-
-// Handle announcement deletion
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_announcement'])) {
-    $announcement_id = $_POST['delete_announcement'];
-    $sql = "DELETE FROM announcement WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $announcement_id);
-    if (!$stmt->execute()) {
-        echo "Error deleting announcement: " . $stmt->error;
-    }
-    $stmt->close();
-    header("Location: admin.php");
-    exit;
-}
-
-// Handle announcement update (display edit form)
-if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['edit_announcement'])) {
-    $announcement_id = $_GET['edit_announcement'];
-    $sql = "SELECT * FROM announcement WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $announcement_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $announcement_to_edit = $result->fetch_assoc();
-    $stmt->close();
-
-    if (!$announcement_to_edit) {
-        echo "Announcement not found.";
-        exit;
-    }
-}
-
-// Handle announcement update (submit changes)
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_announcement_id']) && isset($_POST['updated_announcement_message'])) {
-    $announcement_id = $_POST['update_announcement_id'];
-    $updated_message = mysqli_real_escape_string($conn, $_POST['updated_announcement_message']);
-
-    $sql = "UPDATE announcement SET message = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("si", $updated_message, $announcement_id);
-    if (!$stmt->execute()) {
-        echo "Error updating announcement: " . $stmt->error;
-    }
-    $stmt->close();
-    header("Location: admin.php");
-    exit;
-}
-
-// Fetch announcements
-$sql_announcements = "SELECT * FROM announcement ORDER BY timestamp DESC"; // Get most recent first
-$result_announcements = $conn->query($sql_announcements);
-$announcements = [];
-if ($result_announcements->num_rows > 0) {
-    while ($row = $result_announcements->fetch_assoc()) {
-        $announcements[] = $row;
-    }
-}
-// Fetch current sit-in records (where time_out is NULL)
-$sql_sitins = "SELECT sr.id, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN
-               FROM sitin_records sr
-               JOIN user u ON sr.IDNO = u.IDNO
-               WHERE sr.TIME_OUT IS NULL";
-$result_sitins = $conn->query($sql_sitins);
+// Fetch sit-in records for today
+$today = date("Y-m-d");
+$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT 
+               FROM sitin_records sr 
+               JOIN user u ON sr.IDNO = u.IDNO 
+               WHERE DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE())
+               ORDER BY sr.TIME_IN DESC";
+$stmt_sitins = $conn->prepare($sql_sitins);
+$stmt_sitins->execute();
+$result_sitins = $stmt_sitins->get_result();
 
 $sitin_records = [];
 if ($result_sitins->num_rows > 0) {
@@ -119,6 +34,7 @@ if ($result_sitins->num_rows > 0) {
         $sitin_records[] = $row;
     }
 }
+$stmt_sitins->close();
 
 // Handle student search (Modal Search) & Sit-in Form
 $student_found = null;
@@ -154,6 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
                 $show_sitin_form = false;
                 $show_result_modal = true;
                 $student_found = null;
+                $close_modal_on_success = true;
                 
             } else {
                 $sitin_error = "Error adding sitin record. Please try again";
@@ -163,13 +80,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
 
     $stmt_check_sitin->close();
 }
-
-// Handle student search
-$student_found = null;
-$search_error = null;
-$show_search_modal = false;
-$show_result_modal = false; // Added variable for result modal visibility
-
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     $search_idno = mysqli_real_escape_string($conn, $_POST['search_idno']);
     $show_search_modal = true;
@@ -195,6 +105,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
         $show_sitin_form = false;
     }
 }
+
+// Display success message if set
+if (isset($_SESSION['timeout_success'])) {
+    $timeout_success = $_SESSION['timeout_success'];
+    unset($_SESSION['timeout_success']); // Clear the message after displaying it
+}
 ?>
 
 <!DOCTYPE html>
@@ -206,13 +122,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="side_nav.css">
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <title>Home</title>
+    <title>Today's Sit-ins</title>
     <style>
-        .announcement-actions {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
+        .sitin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .sitin-table th,
+        .sitin-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .sitin-table th {
+            background-color: #f0fff0;
         }
     </style>
 </head>
@@ -226,17 +152,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
             ?>
             <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px;">
         </div>
-        <a href="admin.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
+        <a href="admin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
         <a href="#" onclick="document.getElementById('searchModal').style.display='block'" class="w3-bar-item w3-button"><i class="fa-solid fa-magnifying-glass w3-padding"></i><span>Search</span></a>
         <a href="list.php" class="w3-bar-item w3-button"><i class="fa-solid fa-user w3-padding"></i><span>Students</span></a>
-        <a href="currentSitin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
-        <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clipboard-list w3-padding"></i><span>Sit-in Reports</span></a>
+        <a href="currentSitin.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
     </div>
-       <!-- Search Modal -->
-       <div id="searchModal" class="w3-modal" style="z-index: 1000; display: <?php echo ($show_search_modal && !$show_result_modal) ? 'block' : 'none'; ?>;">
+    <!-- Search Modal -->
+    <div id="searchModal" class="w3-modal" style="z-index: 1000; display: <?php echo ($show_search_modal && !$show_result_modal) ? 'block' : 'none'; ?>;">
         <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
             <header class="w3-container">
                 <span onclick="document.getElementById('searchModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
@@ -262,8 +187,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
             </div>
         </div>
     </div>
- <!--Result Modal-->
- <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
+    <!--Result Modal-->
+    <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
         <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
             <header class="w3-container">
                 <span onclick="document.getElementById('resultModal').style.display='none'; document.getElementById('searchModal').style.display='block';" class="w3-button w3-display-topright">&times;</span>
@@ -322,109 +247,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
             <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
-            <h1 style="margin-left: 10px; color: #ffff;">Dashboard</h1>
+            <h1 style="margin-left: 10px; color: #ffff;">Today's Sit-ins</h1>
         </div>
-        <div class="w3-row-padding" style="margin: 5% 10px;">
-            <div class="w3-col m6">
-                <!---Announcement---->
-                <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-margin-bottom w3-animate-top" style="width: 100%;">
-                    <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
-                        <i class="fa-solid fa-bullhorn"></i>
-                        <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
-                    </div>
-                    <?php if (isset($announcement_to_edit)) : ?>
-                        <form method="POST" class="w3-margin-top">
-                            <input type="hidden" name="update_announcement_id" value="<?php echo htmlspecialchars($announcement_to_edit['ID']); ?>">
-                            <textarea name="updated_announcement_message" class="w3-input w3-border" placeholder="Edit your announcement here..." rows="4"><?php echo htmlspecialchars($announcement_to_edit['MESSAGE']); ?></textarea>
-                            <button type="submit" class="w3-button w3-purple w3-margin-top">Update Announcement</button>
-                            <a href="admin.php" class="w3-button w3-red w3-margin-top">Cancel</a>
-                        </form>
+
+        <div class="w3-container" style="margin: 5% 10px;">
+        <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
+                <a href="currentSitin.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Current Sit-in</a>
+            </div>
+            <h2 class="w3-margin-bottom">Current Sit-in Records</h2>
+            <table class="sitin-table">
+                <thead id="sitinTable">
+                    <tr>
+                        <th>Sit-in No.</th>
+                        <th>IDNO</th>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Laboratory</th>
+                        <th>Time In</th>
+                        <th>Time Out</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="sitinTableBody">
+                    <?php if (count($sitin_records) > 0) : ?>
+                        <?php foreach ($sitin_records as $record) : ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($record['ID']); ?></td>
+                                <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
+                                <td><?php echo htmlspecialchars($record['Name']); ?></td>
+                                <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
+                                <td><?php echo date("g:i a", strtotime($record['TIME_IN'])); ?></td>
+                                <td><?php echo $record['TIME_OUT'] ? date("g:i a", strtotime($record['TIME_OUT'])) : 'Still Sitting-in'; ?></td>
+                                <td><?php echo date("Y-m-d", strtotime($record['TIME_IN'])); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php else : ?>
-                        <form method="POST" class="w3-margin-top">
-                            <textarea name="announcement_message" class="w3-input w3-border" placeholder="Type your announcement here..." rows="4" required></textarea>
-                            <button type="submit" class="w3-button w3-purple w3-margin-top">Post Announcement</button>
-                        </form>
+                        <tr>
+                            <td colspan="8">No sit-in records found for today.</td>
+                        </tr>
                     <?php endif; ?>
-                    <div id="announcements-list" class="w3-margin-top">
-                        <?php if (count($announcements) > 0) : ?>
-                            <?php foreach ($announcements as $announcement) : ?>
-                                <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
-                                    <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
-                                    <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
-                                    <div class="announcement-actions">
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="delete_announcement" value="<?php echo $announcement['ID']; ?>">
-                                            <button type="submit" class="w3-button w3-red w3-small">Delete</button>
-                                        </form>
-                                        <a href="admin.php?edit_announcement=<?php echo $announcement['ID']; ?>" class="w3-button w3-blue w3-small">Update</a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else : ?>
-                            <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-            <div class="w3-col m6">
-                <!---Statistics---->
-                <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 500px;">
-                    <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
-                        <h3><i class="fa-solid fa-chart-simple w3-padding"></i>Statistics</h3>
-                    </div>
-                    <div class="w3-container" style="width: 100%;">
-                        <canvas id="courseChart"></canvas>
-                     </div>
-                    <br>
-                </div>
-            </div>
-            <script>
-                //close the modal
-                document.addEventListener('DOMContentLoaded', function() {
-                    <?php if ($show_result_modal): ?>
-                        document.getElementById('searchModal').style.display = 'none';
-                        document.getElementById('resultModal').style.display = 'block';
-                    <?php endif; ?>
-                });
-                function w3_open() {
-                    document.getElementById("mySidebar").style.display = "block";
-                }
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-                function w3_close() {
-                    document.getElementById("mySidebar").style.display = "none";
-                }
+    <script>
+        function w3_open() {
+            document.getElementById("mySidebar").style.display = "block";
+        }
 
-                //pie chart
-                var ctx = document.getElementById('courseChart').getContext('2d');
-                var myChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: <?php echo $chart_labels; ?>,
-                        datasets: [{
-                            data: <?php echo $chart_data; ?>,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.8)',
-                                'rgba(54, 162, 235, 0.8)',
-                                'rgba(255, 206, 86, 0.8)',
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true, // Ensure chart is responsive
-                        maintainAspectRatio: true,
-                        layout: {
-                            padding: 10 // Adjust padding around the chart
-                        }
-                     }
-                });
-
-            </script>
+        function w3_close() {
+            document.getElementById("mySidebar").style.display = "none";
+        }
+    </script>
 </body>
 
 </html>

@@ -107,6 +107,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
                 $show_sitin_form = false;
                 $show_result_modal = true;
                 $student_found = null;
+                $search_error = null;
+                
                 $close_modal_on_success = true;
                 
             } else {
@@ -117,6 +119,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
 
     $stmt_check_sitin->close();
 }
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     $search_idno = mysqli_real_escape_string($conn, $_POST['search_idno']);
     $show_search_modal = true;
@@ -177,6 +180,7 @@ if (isset($_SESSION['timeout_success'])) {
         .sitin-table th {
             background-color: #f0fff0;
         }
+
     </style>
 </head>
 
@@ -225,8 +229,8 @@ if (isset($_SESSION['timeout_success'])) {
             </div>
         </div>
     </div>
-    <!--Result Modal-->
-    <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
+   <!--Result Modal-->
+   <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
         <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
             <header class="w3-container">
                 <span onclick="document.getElementById('resultModal').style.display='none'; document.getElementById('searchModal').style.display='block';" class="w3-button w3-display-topright">&times;</span>
@@ -253,10 +257,26 @@ if (isset($_SESSION['timeout_success'])) {
                     <div class="w3-container" style="margin: 0 10%;">
                         <form method="POST">
                             <input type="hidden" name="add_sitin_user_id" value="<?php echo $student_found['IDNO']; ?>">
-                            <label for="purpose">Purpose:</label>
-                            <input type="text" id="purpose" name="purpose" class="w3-input w3-border" required><br>
-                            <label for="laboratory">Laboratory:</label>
-                            <input type="text" id="laboratory" name="laboratory" class="w3-input w3-border" required><br>
+                            <label for="purpose">Purpose:</label><br>
+                            <select id="purpose" name="purpose" class="w3-input w3-border" required>
+                                <option value="" disabled selected hidden>Select Purpose</option>
+                                <option value="PHP Programming">PHP Programming</option>
+                                <option value="C Programming">C Programming</option>
+                                <option value="C++ Programming">C++ Programming</option>
+                                <option value="Java Programming">Java Programming</option>
+                                <option value=".Net Programming">.Net Programming</option>
+                                <option value="Others">Others</option>
+                            </select><br>
+                            <label for="laboratory">Laboratory:</label><br>
+                            <select id="laboratory" name="laboratory" class="w3-input w3-border" required>
+                                <option value="" disabled selected hidden>Select Laboratory</option>
+                                <option value="524">524</option>
+                                <option value="526">526</option>
+                                <option value="528">528</option>
+                                <option value="530">530</option>
+                                <option value="542">542</option>
+                                <option value="544">544</option>
+                            </select><br>
                             <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Add Sit-in</button>
                         </form>
                     </div>
@@ -271,9 +291,11 @@ if (isset($_SESSION['timeout_success'])) {
             <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
             <h1 style="margin-left: 10px; color: #ffff;">Current Sit-ins</h1>
         </div>
-
         <div class="w3-container" style="margin: 5% 10px;">
-            <h2 class="w3-margin-bottom">Current Sit-in Records</h2>
+            <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
+                <a href="SitinRecords.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Sit-in Records</a>
+            </div>
+            <h2 class="w3-margin-bottom">Current Sit-in</h2>            
             <table class="sitin-table">
                 <thead>
                     <tr>
@@ -329,7 +351,7 @@ if (isset($_SESSION['timeout_success'])) {
                                 <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
                                 <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
                                 <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
-                                <td><?php echo date("Y-m-d H:i:s", strtotime($record['TIME_IN'])); ?></td>
+                                <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
                                 <td style="text-align: center;">
                                     <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
                                         <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
@@ -344,22 +366,18 @@ if (isset($_SESSION['timeout_success'])) {
     </div>
 
     <script>
+        
         document.addEventListener('DOMContentLoaded', function() {
-          <?php if ($show_result_modal): ?>
-                document.getElementById('searchModal').style.display = 'none';
+            <?php if ($show_result_modal): ?>
+                
                 document.getElementById('resultModal').style.display = 'block';
-                <?php if(isset($close_modal_on_success) && $close_modal_on_success): ?>
-                  // Automatically close the modal after a short delay
-                  setTimeout(function() {
-                      document.getElementById('resultModal').style.display = 'none';
-                  }, 1500); // 1.5 seconds delay (adjust as needed)
+
+                <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
+                    // Close modal after successful submission
+                    setTimeout(function() {
+                        document.getElementById('resultModal').style.display = 'none';
+                    }, 1000); // Close after 1 second
                 <?php endif; ?>
-            <?php endif; ?>
-        });
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($show_result_modal) : ?>
-                document.getElementById('searchModal').style.display = 'none';
-                document.getElementById('resultModal').style.display = 'block';
             <?php endif; ?>
         });
 

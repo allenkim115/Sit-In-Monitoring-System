@@ -19,3 +19,8 @@ background-color:rgba(100,25,117,1);
 color: white; 
 font-weight: bold;
 }
+.active1 {
+    background-color:rgb(87, 87, 87); 
+    color: white; 
+    font-weight: bold;
+    }
