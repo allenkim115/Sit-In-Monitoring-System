@@ -192,10 +192,9 @@ if (isset($_SESSION['timeout_success'])) {
         <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
             <header class="w3-container">
                 <span onclick="document.getElementById('resultModal').style.display='none'; document.getElementById('searchModal').style.display='block';" class="w3-button w3-display-topright">&times;</span>
-                <h2 style="text-transform:uppercase;">Search Result</h2>
             </header>
             <?php if ($student_found) : ?>
-                <div class="w3-container w3-center">
+                <div class="w3-container w3-center w3-margin-top">
                     <img src="<?php echo htmlspecialchars($student_found['PROFILE_PIC'] ? $student_found['PROFILE_PIC'] : 'images/default_pic.png'); ?>" alt="User Profile" style="width: 100px; height: 100px; border-radius: 50%;">
                 </div>
                 <div class="w3-container" style="margin: 0 10%;">
