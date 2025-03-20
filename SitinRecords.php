@@ -17,13 +17,28 @@ $stmt_profile->execute();
 $result_profile = $stmt_profile->get_result();
 $user = $result_profile->fetch_assoc();
 
-// Fetch sit-in records for today
-$today = date("Y-m-d");
-$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT 
-               FROM sitin_records sr 
-               JOIN user u ON sr.IDNO = u.IDNO 
-               WHERE DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE())
-               ORDER BY sr.TIME_IN DESC";
+// Initialize search term
+$search_term = "";
+
+// Base SQL query
+$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
+               FROM sitin_records sr
+               JOIN user u ON sr.IDNO = u.IDNO";
+
+// Check if search term is submitted
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $search_term = mysqli_real_escape_string($conn, $_GET['search']);
+    // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME)
+    $sql_sitins .= " WHERE (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+} else {
+    // Default: show today's records
+    $sql_sitins .= " WHERE DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE())";
+}
+
+// Add order by clause
+$sql_sitins .= " ORDER BY sr.TIME_IN DESC";
+
+// Prepare and execute the query
 $stmt_sitins = $conn->prepare($sql_sitins);
 $stmt_sitins->execute();
 $result_sitins = $stmt_sitins->get_result();
@@ -122,7 +137,7 @@ if (isset($_SESSION['timeout_success'])) {
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="side_nav.css">
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
-    <title>Today's Sit-ins</title>
+    <title>Sit-in Records</title>
     <style>
         .sitin-table {
             width: 100%;
@@ -202,6 +217,7 @@ if (isset($_SESSION['timeout_success'])) {
                     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
                     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
                     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
                 </div>
             <?php endif; ?>
             <?php if ($show_sitin_form) : ?>
@@ -246,10 +262,19 @@ if (isset($_SESSION['timeout_success'])) {
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
             <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
-            <h1 style="margin-left: 10px; color: #ffff;">Today's Sit-ins</h1>
+            <h1 style="margin-left: 10px; color: #ffff;">Sit-in Records</h1>
         </div>
 
         <div class="w3-container" style="margin: 5% 10px;">
+        <!-- Search Bar -->
+        <div class="w3-row w3-margin-bottom">
+                <div class="w3-col m6">
+                    <form method="GET" class="w3-bar">
+                        <input type="text" name="search" class="w3-input w3-border w3-round" style="width: auto; display: inline-block;" placeholder="IDNO/Name" value="<?php echo htmlspecialchars($search_term); ?>">
+                        <button type="submit" class="w3-button w3-purple w3-round-large w3-small">Search</button>
+                        <a href="SitinRecords.php" class="w3-button w3-gray w3-round-large w3-small">Clear</a>
+                    </form>
+                </div>
         <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
                 <a href="currentSitin.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Current Sit-in</a>
             </div>
@@ -292,6 +317,26 @@ if (isset($_SESSION['timeout_success'])) {
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($show_result_modal) : ?>
+                document.getElementById('searchModal').style.display = 'none';
+                document.getElementById('resultModal').style.display = 'block';
+            <?php endif; ?>
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($show_result_modal): ?>
+                
+                document.getElementById('resultModal').style.display = 'block';
+
+                <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
+                    // Close modal after successful submission
+                    setTimeout(function() {
+                        document.getElementById('resultModal').style.display = 'none';
+                    }, 1000); // Close after 1 second
+                <?php endif; ?>
+            <?php endif; ?>
+        });
         function w3_open() {
             document.getElementById("mySidebar").style.display = "block";
         }

@@ -277,6 +277,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
                     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
                     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
                 </div>
             <?php endif; ?>
             <?php if ($show_sitin_form) : ?>
@@ -321,7 +322,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
             <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
-            <h1 style="margin-left: 10px; color: #ffff;">Dashboard</h1>
+            <h1 style="margin-left: 10px; color: #ffff;">Admin Dashboard</h1>
         </div>
         <div class="w3-row-padding" style="margin: 5% 10px;">
             <div class="w3-col m6">
@@ -378,6 +379,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                 </div>
             </div>
             <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                <?php if ($show_result_modal): ?>
+                
+                    document.getElementById('resultModal').style.display = 'block';
+
+                    <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
+                        // Close modal after successful submission
+                        setTimeout(function() {
+                            document.getElementById('resultModal').style.display = 'none';
+                        }, 1000); // Close after 1 second
+                    <?php endif; ?>
+                <?php endif; ?>
+                });
                 //close the modal
                 document.addEventListener('DOMContentLoaded', function() {
                     <?php if ($show_result_modal): ?>
@@ -385,6 +399,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                         document.getElementById('resultModal').style.display = 'block';
                     <?php endif; ?>
                 });
+
+                
                 function w3_open() {
                     document.getElementById("mySidebar").style.display = "block";
                 }

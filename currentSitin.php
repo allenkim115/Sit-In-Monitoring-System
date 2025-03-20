@@ -17,6 +17,9 @@ $stmt_profile->execute();
 $result_profile = $stmt_profile->get_result();
 $user = $result_profile->fetch_assoc();
 
+// Initialize search term
+$search_term = "";
+
 // Initialize $stmt_deduct_session to null before the try block
 $stmt_deduct_session = null;
 
@@ -56,6 +59,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['timeout_id'])) {
         echo "Error: " . $e->getMessage();
     } 
 
+    // Check if search term is submitted
+    if (isset($_GET['search']) && !empty($_GET['search'])) {
+        $search_term = mysqli_real_escape_string($conn, $_GET['search']);
+        // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME)
+        $sql_sitins .= " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    }
+
+    // Add order by clause
+    $sql_sitins .= " ORDER BY sr.TIME_IN DESC";
     $stmt_timeout->close();
 }
 
@@ -244,6 +256,7 @@ if (isset($_SESSION['timeout_success'])) {
                     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
                     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
                     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
                 </div>
             <?php endif; ?>
             <?php if ($show_sitin_form) : ?>
@@ -291,6 +304,15 @@ if (isset($_SESSION['timeout_success'])) {
             <h1 style="margin-left: 10px; color: #ffff;">Current Sit-ins</h1>
         </div>
         <div class="w3-container" style="margin: 5% 10px;">
+            <!-- Search Bar -->
+            <div class="w3-row w3-margin-bottom">
+                <div class="w3-col m6">
+                    <form method="GET" class="w3-bar">
+                        <input type="text" name="search" class="w3-input w3-border w3-round" style="width: auto; display: inline-block;" placeholder="IDNO/Name" value="<?php echo htmlspecialchars($search_term); ?>">
+                        <button type="submit" class="w3-button w3-purple w3-round-large w3-small">Search</button>
+                        <a href="currentSitin.php" class="w3-button w3-gray w3-round-large w3-small">Clear</a>
+                    </form>
+                </div>
             <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
                 <a href="SitinRecords.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Sit-in Records</a>
             </div>
@@ -377,6 +399,13 @@ if (isset($_SESSION['timeout_success'])) {
                         document.getElementById('resultModal').style.display = 'none';
                     }, 1000); // Close after 1 second
                 <?php endif; ?>
+            <?php endif; ?>
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($show_result_modal) : ?>
+                document.getElementById('searchModal').style.display = 'none';
+                document.getElementById('resultModal').style.display = 'block';
             <?php endif; ?>
         });
 

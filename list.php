@@ -233,6 +233,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                     <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
                     <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
                     <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
                 </div>
             <?php endif; ?>
             <?php if ($show_sitin_form) : ?>
@@ -350,6 +351,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
             <?php if ($show_result_modal) : ?>
                 document.getElementById('searchModal').style.display = 'none';
                 document.getElementById('resultModal').style.display = 'block';
+            <?php endif; ?>
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($show_result_modal): ?>
+                
+                document.getElementById('resultModal').style.display = 'block';
+
+                <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
+                    // Close modal after successful submission
+                    setTimeout(function() {
+                        document.getElementById('resultModal').style.display = 'none';
+                    }, 1000); // Close after 1 second
+                <?php endif; ?>
             <?php endif; ?>
         });
 
