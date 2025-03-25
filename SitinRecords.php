@@ -1,4 +1,5 @@
 <?php
+define('INCLUDED_IN_MAIN_FILE', true); // Define a constant to check if the file is included
 include 'connect.php';
 session_start();
 
@@ -51,81 +52,33 @@ if ($result_sitins->num_rows > 0) {
 }
 $stmt_sitins->close();
 
-// Handle student search (Modal Search) & Sit-in Form
-$student_found = null;
-$search_error = null;
-$show_search_modal = false;
-$show_result_modal = false;
-$show_sitin_form = false;
-$sitin_error = null;
-$sitin_success = null;
+// Get purpose statistics
+$sql_purpose_stats = "SELECT PURPOSE, COUNT(*) as count FROM sitin_records GROUP BY PURPOSE ORDER BY count DESC";
+$result_purpose_stats = $conn->query($sql_purpose_stats);
+$purpose_labels = [];
+$purpose_data = [];
 
-// Handle adding sit-in record
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) && isset($_POST['purpose']) && isset($_POST['laboratory'])) {
-    $user_id = $_POST['add_sitin_user_id'];
-    $purpose = mysqli_real_escape_string($conn, $_POST['purpose']);
-    $laboratory = mysqli_real_escape_string($conn, $_POST['laboratory']);
-
-    // Check if the user is already sitting-in
-    $sql_check_sitin = "SELECT * FROM sitin_records WHERE IDNO = ? AND TIME_OUT IS NULL";
-    $stmt_check_sitin = $conn->prepare($sql_check_sitin);
-    $stmt_check_sitin->bind_param("i", $user_id);
-    $stmt_check_sitin->execute();
-    $result_check_sitin = $stmt_check_sitin->get_result();
-    
-    if ($result_check_sitin->num_rows > 0) {
-        $sitin_error = "The user is already sitting in. Please Time Out the user first.";
-    } else {
-            $sql_add_sitin = "INSERT INTO sitin_records (IDNO, PURPOSE, LABORATORY, TIME_IN) VALUES (?, ?, ?, NOW())";
-            $stmt_add_sitin = $conn->prepare($sql_add_sitin);
-            $stmt_add_sitin->bind_param("iss", $user_id, $purpose, $laboratory);
-
-            if ($stmt_add_sitin->execute()) {
-                $sitin_success = "Sitin record added successfully";
-                $show_sitin_form = false;
-                $show_result_modal = true;
-                $student_found = null;
-                $close_modal_on_success = true;
-                
-            } else {
-                $sitin_error = "Error adding sitin record. Please try again";
-            }
-             $stmt_add_sitin->close();
-    }
-
-    $stmt_check_sitin->close();
-}
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
-    $search_idno = mysqli_real_escape_string($conn, $_POST['search_idno']);
-    $show_search_modal = true;
-    if (!empty($search_idno)) {
-        $sql_search = "SELECT * FROM user WHERE IDNO = ?";
-        $stmt_search = $conn->prepare($sql_search);
-        $stmt_search->bind_param("s", $search_idno);
-        $stmt_search->execute();
-        $result_search = $stmt_search->get_result();
-        if ($result_search->num_rows > 0) {
-            $student_found = $result_search->fetch_assoc();
-            $show_result_modal = true;
-            $show_sitin_form = true;
-        } else {
-            $search_error = "Student not found.";
-            $show_result_modal = false;
-            $show_sitin_form = false;
-        }
-        $stmt_search->close();
-    } else {
-        $search_error = "Please enter an ID number.";
-        $show_result_modal = false;
-        $show_sitin_form = false;
+if ($result_purpose_stats->num_rows > 0) {
+    while ($row = $result_purpose_stats->fetch_assoc()) {
+        $purpose_labels[] = $row['PURPOSE'];
+        $purpose_data[] = $row['count'];
     }
 }
 
-// Display success message if set
-if (isset($_SESSION['timeout_success'])) {
-    $timeout_success = $_SESSION['timeout_success'];
-    unset($_SESSION['timeout_success']); // Clear the message after displaying it
+// Get laboratory statistics
+$sql_lab_stats = "SELECT LABORATORY, COUNT(*) as count FROM sitin_records GROUP BY LABORATORY ORDER BY count DESC";
+$result_lab_stats = $conn->query($sql_lab_stats);
+$lab_labels = [];
+$lab_data = [];
+
+if ($result_lab_stats->num_rows > 0) {
+    while ($row = $result_lab_stats->fetch_assoc()) {
+        $lab_labels[] = $row['LABORATORY'];
+        $lab_data[] = $row['count'];
+    }
 }
+
+include 'search_modal.php';
 ?>
 
 <!DOCTYPE html>
@@ -137,6 +90,7 @@ if (isset($_SESSION['timeout_success'])) {
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="side_nav.css">
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>Sit-in Records</title>
     <style>
         .sitin-table {
@@ -154,6 +108,13 @@ if (isset($_SESSION['timeout_success'])) {
 
         .sitin-table th {
             background-color: #f0fff0;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 450px;
+            width: 100%;
+            margin-bottom: 30px;
         }
     </style>
 </head>
@@ -175,99 +136,31 @@ if (isset($_SESSION['timeout_success'])) {
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
     </div>
-    <!-- Search Modal -->
-    <div id="searchModal" class="w3-modal" style="z-index: 1000; display: <?php echo ($show_search_modal && !$show_result_modal) ? 'block' : 'none'; ?>;">
-        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-            <header class="w3-container">
-                <span onclick="document.getElementById('searchModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
-                <h2 style="text-transform:uppercase;">Search Student</h2>
-            </header>
-            <div class="w3-container">
-                <form method="POST">
-                    <script>
-                        setTimeout(function() {
-                            var successMessage = document.getElementById('successMessage');
-                            if (successMessage) {
-                                successMessage.style.display = 'none';
-                            }
-                        }, 2000);
-                    </script>
-                    <?php if ($search_error && !$show_result_modal) : ?>
-                        <p class="w3-text-red w3-bold" id="successMessage"><?php echo htmlspecialchars($search_error); ?></p>
-                    <?php endif; ?>
-                    <label for="search_idno">Enter Student IDNO:</label>
-                    <input type="text" id="search_idno" name="search_idno" class="w3-input w3-border" required>
-                    <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Search</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    <!--Result Modal-->
-    <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
-        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-            <header class="w3-container">
-                <span onclick="document.getElementById('resultModal').style.display='none'; document.getElementById('searchModal').style.display='block';" class="w3-button w3-display-topright">&times;</span>
-            </header>
-            <?php if ($student_found) : ?>
-                <div class="w3-container w3-center w3-margin-top">
-                    <img src="<?php echo htmlspecialchars($student_found['PROFILE_PIC'] ? $student_found['PROFILE_PIC'] : 'images/default_pic.png'); ?>" alt="User Profile" style="width: 100px; height: 100px; border-radius: 50%;">
-                </div>
-                <div class="w3-container" style="margin: 0 10%;">
-                    <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($student_found['IDNO']); ?></p>
-                    <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
-                    <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
-                    <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
-                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
-                </div>
-            <?php endif; ?>
-            <?php if ($show_sitin_form) : ?>
-                    <?php if($sitin_error): ?>
-                        <p class="w3-text-red w3-center"><?php echo htmlspecialchars($sitin_error); ?></p>
-                    <?php endif; ?>
-                    <?php if($sitin_success): ?>
-                        <p class="w3-text-green w3-center"><?php echo htmlspecialchars($sitin_success); ?></p>
-                    <?php endif; ?>
-                    <div class="w3-container" style="margin: 0 10%;">
-                        <form method="POST">
-                            <input type="hidden" name="add_sitin_user_id" value="<?php echo $student_found['IDNO']; ?>">
-                            <label for="purpose">Purpose:</label><br>
-                            <select id="purpose" name="purpose" class="w3-input w3-border" required>
-                                <option value="" disabled selected hidden>Select Purpose</option>
-                                <option value="PHP Programming">PHP Programming</option>
-                                <option value="C Programming">C Programming</option>
-                                <option value="C++ Programming">C++ Programming</option>
-                                <option value="Java Programming">Java Programming</option>
-                                <option value=".Net Programming">.Net Programming</option>
-                                <option value="Others">Others</option>
-                            </select><br>
-                            <label for="laboratory">Laboratory:</label><br>
-                            <select id="laboratory" name="laboratory" class="w3-input w3-border" required>
-                                <option value="" disabled selected hidden>Select Laboratory</option>
-                                <option value="524">524</option>
-                                <option value="526">526</option>
-                                <option value="528">528</option>
-                                <option value="530">530</option>
-                                <option value="542">542</option>
-                                <option value="544">544</option>
-                            </select><br>
-                            <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Add Sit-in</button>
-                        </form>
-                    </div>
-                <?php endif; ?>
-            <?php if ($search_error && $show_result_modal) : ?>
-                <p class="w3-text-red w3-center"><?php echo htmlspecialchars($search_error); ?></p>
-            <?php endif; ?>
-        </div>
-    </div>
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
-            <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
+            <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">☰</button>
             <h1 style="margin-left: 10px; color: #ffff;">Sit-in Records</h1>
         </div>
-
         <div class="w3-container" style="margin: 5% 10px;">
-        <!-- Search Bar -->
-        <div class="w3-row w3-margin-bottom">
+            <!-- Charts Section -->
+            <div class="w3-row-padding w3-margin-bottom">
+                <div class="w3-half">
+                    <div class="w3-card w3-round-large w3-white w3-padding">
+                        <div class="chart-container">
+                            <canvas id="purposeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="w3-half">
+                    <div class="w3-card w3-round-large w3-white w3-padding">
+                        <div class="chart-container">
+                            <canvas id="labChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+              <!-- Search Bar -->
+              <div class="w3-row w3-margin-bottom">
                 <div class="w3-col m6">
                     <form method="GET" class="w3-bar">
                         <input type="text" name="search" class="w3-input w3-border w3-round" style="width: auto; display: inline-block;" placeholder="IDNO/Name" value="<?php echo htmlspecialchars($search_term); ?>">
@@ -275,9 +168,10 @@ if (isset($_SESSION['timeout_success'])) {
                         <a href="SitinRecords.php" class="w3-button w3-gray w3-round-large w3-small">Clear</a>
                     </form>
                 </div>
-        <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
+                <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
                 <a href="currentSitin.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Current Sit-in</a>
             </div>
+            </div> 
             <h2 class="w3-margin-bottom">Current Sit-in Records</h2>
             <table class="sitin-table">
                 <thead id="sitinTable">
@@ -317,26 +211,6 @@ if (isset($_SESSION['timeout_success'])) {
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($show_result_modal) : ?>
-                document.getElementById('searchModal').style.display = 'none';
-                document.getElementById('resultModal').style.display = 'block';
-            <?php endif; ?>
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($show_result_modal): ?>
-                
-                document.getElementById('resultModal').style.display = 'block';
-
-                <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
-                    // Close modal after successful submission
-                    setTimeout(function() {
-                        document.getElementById('resultModal').style.display = 'none';
-                    }, 1000); // Close after 1 second
-                <?php endif; ?>
-            <?php endif; ?>
-        });
         function w3_open() {
             document.getElementById("mySidebar").style.display = "block";
         }
@@ -344,6 +218,86 @@ if (isset($_SESSION['timeout_success'])) {
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
         }
+        
+        // Purpose Chart
+        var purposeCtx = document.getElementById('purposeChart').getContext('2d');
+        var purposeChart = new Chart(purposeCtx, {
+            type: 'pie',
+            data: {
+                labels: <?php echo json_encode($purpose_labels); ?>,
+                datasets: [{
+                    label: 'Sit-in Purposes',
+                    data: <?php echo json_encode($purpose_data); ?>,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Sit-in Purposes Distribution'
+                    }
+                }
+            }
+        });
+        
+        // Laboratory Chart
+        var labCtx = document.getElementById('labChart').getContext('2d');
+        var labChart = new Chart(labCtx, {
+            type: 'pie',
+            data: {
+                labels: <?php echo json_encode($lab_labels); ?>,
+                datasets: [{
+                    label: 'Laboratory Usage',
+                    data: <?php echo json_encode($lab_data); ?>,
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Laboratory Usage Distribution'
+                    }
+                }
+            }
+        });
     </script>
 </body>
 

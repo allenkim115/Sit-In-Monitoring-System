@@ -1,4 +1,5 @@
 <?php
+define('INCLUDED_IN_MAIN_FILE', true);
 include 'connect.php';
 session_start();
 
@@ -17,8 +18,28 @@ $stmt_profile->execute();
 $result_profile = $stmt_profile->get_result();
 $user = $result_profile->fetch_assoc();
 
+// Handle session reset action
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_session_id'])) {
+    $reset_session_id = $_POST['reset_session_id'];
+    $default_session_count = 30; // Define the default session count
+
+    $sql_reset_session = "UPDATE user SET SESSION_COUNT = ? WHERE IDNO = ?";
+    $stmt_reset_session = $conn->prepare($sql_reset_session);
+    $stmt_reset_session->bind_param("is", $default_session_count, $reset_session_id);
+
+    if ($stmt_reset_session->execute()) {
+        $_SESSION['reset_success'] = "Session count reset successfully for IDNO: " . $reset_session_id;
+    } else {
+        $_SESSION['reset_error'] = "Error resetting session count for IDNO: " . $reset_session_id;
+    }
+
+    $stmt_reset_session->close();
+    header("Location: list.php"); // Redirect to refresh the page
+    exit;
+}
+
 // Fetch all users from the database with filtering and search
-$sql_users = "SELECT IDNO, FIRSTNAME, MIDDLENAME, LASTNAME, COURSE, YEAR_LEVEL, PROFILE_PIC FROM user WHERE 1=1"; // Base query
+$sql_users = "SELECT IDNO, FIRSTNAME, MIDDLENAME, LASTNAME, COURSE, YEAR_LEVEL, PROFILE_PIC, SESSION_COUNT FROM user WHERE 1=1"; // Base query - **ADDED SESSION_COUNT**
 
 // Filtering variables initialization
 $filter_course = "";
@@ -65,75 +86,7 @@ if ($result_sitins->num_rows > 0) {
         $sitin_records[] = $row;
     }
 }
-
-// Handle student search (Modal Search) & Sit-in Form
-$student_found = null;
-$search_error = null;
-$show_search_modal = false;
-$show_result_modal = false;
-$show_sitin_form = false;
-$sitin_error = null;
-$sitin_success = null;
-
-// Handle adding sit-in record
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) && isset($_POST['purpose']) && isset($_POST['laboratory'])) {
-    $user_id = $_POST['add_sitin_user_id'];
-    $purpose = mysqli_real_escape_string($conn, $_POST['purpose']);
-    $laboratory = mysqli_real_escape_string($conn, $_POST['laboratory']);
-
-    // Check if the user is already sitting-in
-    $sql_check_sitin = "SELECT * FROM sitin_records WHERE IDNO = ? AND TIME_OUT IS NULL";
-    $stmt_check_sitin = $conn->prepare($sql_check_sitin);
-    $stmt_check_sitin->bind_param("i", $user_id);
-    $stmt_check_sitin->execute();
-    $result_check_sitin = $stmt_check_sitin->get_result();
-    
-    if ($result_check_sitin->num_rows > 0) {
-        $sitin_error = "The user is already sitting in. Please Time Out the user first.";
-    } else {
-            $sql_add_sitin = "INSERT INTO sitin_records (IDNO, PURPOSE, LABORATORY, TIME_IN) VALUES (?, ?, ?, NOW())";
-            $stmt_add_sitin = $conn->prepare($sql_add_sitin);
-            $stmt_add_sitin->bind_param("iss", $user_id, $purpose, $laboratory);
-
-            if ($stmt_add_sitin->execute()) {
-                $sitin_success = "Sitin record added successfully";
-                $show_sitin_form = false;
-                $show_result_modal = true;
-                $student_found = null;
-                
-            } else {
-                $sitin_error = "Error adding sitin record. Please try again";
-            }
-             $stmt_add_sitin->close();
-    }
-
-    $stmt_check_sitin->close();
-}
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
-    $search_idno = mysqli_real_escape_string($conn, $_POST['search_idno']);
-    $show_search_modal = true;
-    if (!empty($search_idno)) {
-        $sql_search = "SELECT * FROM user WHERE IDNO = ?";
-        $stmt_search = $conn->prepare($sql_search);
-        $stmt_search->bind_param("s", $search_idno);
-        $stmt_search->execute();
-        $result_search = $stmt_search->get_result();
-        if ($result_search->num_rows > 0) {
-            $student_found = $result_search->fetch_assoc();
-            $show_result_modal = true;
-            $show_sitin_form = true;
-        } else {
-            $search_error = "Student not found.";
-            $show_result_modal = false;
-            $show_sitin_form = false;
-        }
-        $stmt_search->close();
-    } else {
-        $search_error = "Please enter an ID number.";
-        $show_result_modal = false;
-        $show_sitin_form = false;
-    }
-}
+include 'search_modal.php';
 ?>
 
 <!DOCTYPE html>
@@ -147,38 +100,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
     <title>Students</title>
     <style>
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
 
-        .user-table th,
-        .user-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
+    .user-table th,
+    .user-table td {
+        border: 1px solid #ddd;
+        padding: 6px; /* Reduced padding from 8px to 6px */
+        text-align: left;
+        font-size: 0.9em; /* Added smaller font size */
+    }
+    .user-table td.action-buttons {
+        width: 60px; /* Adjust as needed */
+    }
+    .user-table td.action-buttons form {
+        text-align: center;
+    }
+    .user-table .w3-button.w3-blue {
+        position: relative;
+        overflow: visible;
+    }
 
-        .user-table th {
-            background-color: #f0fff0;
-        }
+    .user-table th {
+        background-color: #f0fff0;
+    }
 
-        /* Adjusted CSS for Profile Pictures */
-        .user-table img {
-            width: 90px;
-            /* Reduced width */
-            height: 90px;
-            /* Reduced height */
-            border-radius: 50%;
-            object-fit: cover;
-        }
+    /* Adjusted CSS for Profile Pictures */
+    .user-table img {
+        width: 70px; /* Reduced from 90px */
+        height: 70px; /* Reduced from 90px */
+        border-radius: 50%;
+        object-fit: cover;
+    }
 
-        /* Add some space to the profile picture column*/
-        .user-table td:first-child {
-            width: 50px;
-        }
-    </style>
+    /* Add some space to the profile picture column*/
+    .user-table td:first-child {
+        width: 40px; /* Reduced from 50px */
+    }
+    
+    /* Make the table more compact overall */
+    .user-table {
+        line-height: 1.2;
+    }
+    /* Tooltip container */
+    .tooltip {
+        position: absolute;
+        background-color: #333;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 4px;
+        z-index: 10;
+        white-space: nowrap;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 100%;
+        opacity: 0;
+    }
+    
+</style>
+
 </head>
 
 <body>
@@ -194,86 +177,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
         <a href="#" onclick="document.getElementById('searchModal').style.display='block'" class="w3-bar-item w3-button"><i class="fa-solid fa-magnifying-glass w3-padding"></i><span>Search</span></a>
         <a href="list.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-user w3-padding"></i><span>Students</span></a>
         <a href="currentSitin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
-        <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-clipboard-list w3-padding"></i><span>Sit-in Reports</span></a>
+        <a href="SitinRecords.php" class="w3-bar-item w3-button"><i class="fa-solid fa-clipboard-list w3-padding"></i><span>Sit-in Reports</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
-    </div>
-    <!-- Search Modal -->
-    <div id="searchModal" class="w3-modal" style="z-index: 1000; display: <?php echo ($show_search_modal && !$show_result_modal) ? 'block' : 'none'; ?>;">
-        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-            <header class="w3-container">
-                <span onclick="document.getElementById('searchModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
-                <h2 style="text-transform:uppercase;">Search Student</h2>
-            </header>
-            <div class="w3-container">
-                <form method="POST">
-                    <?php if ($search_error && !$show_result_modal) : ?>
-                        <p class="w3-text-red"><?php echo htmlspecialchars($search_error); ?></p>
-                    <?php endif; ?>
-                    <label for="search_idno">Enter Student IDNO:</label>
-                    <input type="text" id="search_idno" name="search_idno" class="w3-input w3-border" required>
-                    <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Search</button>
-                </form>
-            </div>
-        </div>
-    </div>
- <!--Result Modal-->
- <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
-        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-            <header class="w3-container">
-                <span onclick="document.getElementById('resultModal').style.display='none'; document.getElementById('searchModal').style.display='block';" class="w3-button w3-display-topright">&times;</span>
-            </header>
-            <?php if ($student_found) : ?>
-                <div class="w3-container w3-center w3-margin-top">
-                    <img src="<?php echo htmlspecialchars($student_found['PROFILE_PIC'] ? $student_found['PROFILE_PIC'] : 'images/default_pic.png'); ?>" alt="User Profile" style="width: 100px; height: 100px; border-radius: 50%;">
-                </div>
-                <div class="w3-container" style="margin: 0 10%;">
-                    <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($student_found['IDNO']); ?></p>
-                    <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
-                    <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($student_found['COURSE']); ?></p>
-                    <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($student_found['YEAR_LEVEL']); ?></p>
-                    <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
-                </div>
-            <?php endif; ?>
-            <?php if ($show_sitin_form) : ?>
-                    <?php if($sitin_error): ?>
-                        <p class="w3-text-red w3-center"><?php echo htmlspecialchars($sitin_error); ?></p>
-                    <?php endif; ?>
-                    <?php if($sitin_success): ?>
-                        <p class="w3-text-green w3-center"><?php echo htmlspecialchars($sitin_success); ?></p>
-                    <?php endif; ?>
-                    <div class="w3-container" style="margin: 0 10%;">
-                        <form method="POST">
-                            <input type="hidden" name="add_sitin_user_id" value="<?php echo $student_found['IDNO']; ?>">
-                            <label for="purpose">Purpose:</label><br>
-                            <select id="purpose" name="purpose" class="w3-input w3-border" required>
-                                <option value="" disabled selected hidden>Select Purpose</option>
-                                <option value="PHP Programming">PHP Programming</option>
-                                <option value="C Programming">C Programming</option>
-                                <option value="C++ Programming">C++ Programming</option>
-                                <option value="Java Programming">Java Programming</option>
-                                <option value=".Net Programming">.Net Programming</option>
-                                <option value="Others">Others</option>
-                            </select><br>
-                            <label for="laboratory">Laboratory:</label><br>
-                            <select id="laboratory" name="laboratory" class="w3-input w3-border" required>
-                                <option value="" disabled selected hidden>Select Laboratory</option>
-                                <option value="524">524</option>
-                                <option value="526">526</option>
-                                <option value="528">528</option>
-                                <option value="530">530</option>
-                                <option value="542">542</option>
-                                <option value="544">544</option>
-                            </select><br>
-                            <button type="submit" class="w3-button w3-purple w3-margin w3-padding w3-round-large w3-right">Add Sit-in</button>
-                        </form>
-                    </div>
-                <?php endif; ?>
-            <?php if ($search_error && $show_result_modal) : ?>
-                <p class="w3-text-red w3-center"><?php echo htmlspecialchars($search_error); ?></p>
-            <?php endif; ?>
-        </div>
     </div>
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
@@ -283,6 +190,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
 
         <div class="w3-container" style="margin: 5% 10px;">
             <h2 class="w3-margin-bottom">Student List</h2>
+             <?php if (isset($_SESSION['reset_success'])): ?>
+                <div id="resetSuccess" class="w3-panel w3-green w3-display-container">
+                    <p><?php echo htmlspecialchars($_SESSION['reset_success']); ?></p>
+                </div>
+                <script>
+                    setTimeout(function() {
+                        var resetSuccess = document.getElementById('resetSuccess');
+                        if (resetSuccess) {
+                            resetSuccess.style.display = 'none';
+                        }
+                    }, 2000);
+                </script>
+                <?php unset($_SESSION['reset_success']); ?>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['reset_error'])): ?>
+                <div id="resetError" class="w3-panel w3-red w3-display-container">
+                    <p><?php echo htmlspecialchars($_SESSION['reset_error']); ?></p>
+                </div>
+                <script>
+                    setTimeout(function() {
+                        var resetError = document.getElementById('resetError');
+                        if (resetError) {
+                            resetError.style.display = 'none';
+                        }
+                    }, 2000);
+                </script>
+                <?php unset($_SESSION['reset_error']); ?>
+            <?php endif; ?>
             <!-- Search Bar -->
             <div class="w3-row w3-margin-bottom">
                 <div class="w3-col m6">
@@ -321,6 +257,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                         <th>Full Name</th>
                         <th>Course</th>
                         <th>Year Level</th>
+                        <th>Sessions</th>
+                        <th>Actions</th> 
                     </tr>
                 </thead>
                 <tbody>
@@ -334,11 +272,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                                 <td><?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></td>
                                 <td><?php echo htmlspecialchars($user['COURSE']); ?></td>
                                 <td><?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></td>
+                                <td><?php echo htmlspecialchars($user['SESSION_COUNT']); ?></td>
+                                <td class="action-buttons">
+                                    <form method="POST" onsubmit="return confirm('Are you sure you want to reset the session count for this user?');">
+                                        <input type="hidden" name="reset_session_id" value="<?php echo htmlspecialchars($user['IDNO']); ?>">
+                                        <button type="submit" class="w3-button w3-blue w3-round-large w3-small">
+                                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                                            <span class="tooltip">Reset Session</span>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="7">No users found.</td>
+                            <td colspan="8">No users found.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -347,26 +295,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($show_result_modal) : ?>
-                document.getElementById('searchModal').style.display = 'none';
-                document.getElementById('resultModal').style.display = 'block';
-            <?php endif; ?>
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if ($show_result_modal): ?>
-                
-                document.getElementById('resultModal').style.display = 'block';
-
-                <?php if (isset($close_modal_on_success) && $close_modal_on_success): ?>
-                    // Close modal after successful submission
-                    setTimeout(function() {
-                        document.getElementById('resultModal').style.display = 'none';
-                    }, 1000); // Close after 1 second
-                <?php endif; ?>
-            <?php endif; ?>
-        });
 
         function w3_open() {
             document.getElementById("mySidebar").style.display = "block";
@@ -375,6 +303,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
         }
+
+        // Add hover effect for tooltip
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.w3-button.w3-blue');
+            buttons.forEach(button => {
+                const tooltip = button.querySelector('.tooltip');
+                button.addEventListener('mouseover', () => {
+                    tooltip.style.opacity = 1;
+                });
+                button.addEventListener('mouseout', () => {
+                    tooltip.style.opacity = 0;
+                });
+            });
+        });
+
     </script>
 </body>
 </html>
