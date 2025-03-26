@@ -45,23 +45,8 @@ $stmt_profile->execute();
 $result_profile = $stmt_profile->get_result();
 $user = $result_profile->fetch_assoc();
 
-// Handle announcement posting
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['announcement_message'])) {
-    $message = mysqli_real_escape_string($conn, $_POST['announcement_message']);
-    if (!empty($message)) {
-        $sql = "INSERT INTO announcement (message) VALUES (?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("s", $message);
-        if (!$stmt->execute()) {
-            echo "Error: " . $stmt->error; // Consider better error handling
-        }
-        $stmt->close();
-    }
-    header("Location: admin.php");
-    exit;
-}
 
-// Handle announcement deletion
+// Handle announcement deletion - place this BEFORE the posting handler
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_announcement'])) {
     $announcement_id = $_POST['delete_announcement'];
     $sql = "DELETE FROM announcement WHERE id = ?";
@@ -92,14 +77,15 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['edit_announcement'])) {
     }
 }
 
-// Handle announcement update (submit changes)
+// Handle announcement update (submit changes) - place this SECOND
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_announcement_id']) && isset($_POST['updated_announcement_message'])) {
     $announcement_id = $_POST['update_announcement_id'];
+    $updated_title = isset($_POST['updated_announcement_title']) ? mysqli_real_escape_string($conn, $_POST['updated_announcement_title']) : '';
     $updated_message = mysqli_real_escape_string($conn, $_POST['updated_announcement_message']);
 
-    $sql = "UPDATE announcement SET message = ? WHERE id = ?";
+    $sql = "UPDATE announcement SET title = ?, message = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("si", $updated_message, $announcement_id);
+    $stmt->bind_param("ssi", $updated_title, $updated_message, $announcement_id);
     if (!$stmt->execute()) {
         echo "Error updating announcement: " . $stmt->error;
     }
@@ -107,6 +93,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_announcement_id
     header("Location: admin.php");
     exit;
 }
+
+// Handle announcement posting - place this LAST
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['announcement_message'])) {
+    // Make sure we're not handling delete or update requests
+    if (!isset($_POST['delete_announcement']) && !isset($_POST['update_announcement_id'])) {
+        $message = mysqli_real_escape_string($conn, $_POST['announcement_message']);
+        $title = isset($_POST['announcement_title']) ? mysqli_real_escape_string($conn, $_POST['announcement_title']) : '';
+        
+        if (!empty($message)) {
+            $sql = "INSERT INTO announcement (title, message) VALUES (?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ss", $title, $message);
+            if (!$stmt->execute()) {
+                echo "Error: " . $stmt->error; // Consider better error handling
+            }
+            $stmt->close();
+        }
+        header("Location: admin.php");
+        exit;
+    }
+}
+
 
 // Fetch announcements
 $sql_announcements = "SELECT * FROM announcement ORDER BY timestamp DESC"; // Get most recent first
@@ -186,7 +194,7 @@ include 'search_modal.php';
     </div>
     <div style="margin-left:20%; z-index: 1; position: relative;">
         <div class="title_page w3-container" style="display: flex; align-items: center;">
-            <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">&#9776;</button>
+            <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">☰</button>
             <h1 style="margin-left: 10px; color: #ffff;">Admin Dashboard</h1>
         </div>
         <div class="w3-row-padding" style="margin: 5% 10px;">
@@ -200,12 +208,14 @@ include 'search_modal.php';
                     <?php if (isset($announcement_to_edit)) : ?>
                         <form method="POST" class="w3-margin-top">
                             <input type="hidden" name="update_announcement_id" value="<?php echo htmlspecialchars($announcement_to_edit['ID']); ?>">
+                            <input type="text" name="updated_announcement_title" class="w3-input w3-border w3-margin-bottom" placeholder="Announcement Title" value="<?php echo htmlspecialchars($announcement_to_edit['TITLE'] ?? ''); ?>" required>
                             <textarea name="updated_announcement_message" class="w3-input w3-border" placeholder="Edit your announcement here..." rows="4"><?php echo htmlspecialchars($announcement_to_edit['MESSAGE']); ?></textarea>
                             <button type="submit" class="w3-button w3-purple w3-margin-top">Update Announcement</button>
                             <a href="admin.php" class="w3-button w3-red w3-margin-top">Cancel</a>
                         </form>
                     <?php else : ?>
                         <form method="POST" class="w3-margin-top">
+                            <input type="text" name="announcement_title" class="w3-input w3-border w3-margin-bottom" placeholder="Announcement Title" required>
                             <textarea name="announcement_message" class="w3-input w3-border" placeholder="Type your announcement here..." rows="4" required></textarea>
                             <button type="submit" class="w3-button w3-purple w3-margin-top">Post Announcement</button>
                         </form>
@@ -214,6 +224,7 @@ include 'search_modal.php';
                         <?php if (count($announcements) > 0) : ?>
                             <?php foreach ($announcements as $announcement) : ?>
                                 <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
+                                    <h4 class="w3-text-purple"><?php echo htmlspecialchars($announcement['TITLE'] ?? 'Announcement'); ?></h4>
                                     <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
                                     <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
                                     <div class="announcement-actions">
@@ -232,6 +243,7 @@ include 'search_modal.php';
                             <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
                         <?php endif; ?>
                     </div>
+
                 </div>
             </div>
             <div class="w3-col m6">

@@ -140,18 +140,19 @@ $result_session = $stmt_session->get_result()->fetch_assoc();
                     <i class="fa-solid fa-bullhorn"></i>
                     <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
                   </div>
-                    <div id="announcements-list" class="w3-margin-top" style="height:115px; overflow-y: auto;">
-                        <?php if (count($announcements) > 0): ?>
-                            <?php foreach ($announcements as $announcement): ?>
-                                <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
-                                    <p><strong><?php echo htmlspecialchars($announcement['MESSAGE']); ?></strong></p>
-                                    <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
-                        <?php endif; ?>
-                    </div>
+                  <div id="announcements-list" class="w3-margin-top" style="height:115px; overflow-y: auto;">
+                    <?php if (count($announcements) > 0): ?>
+                        <?php foreach ($announcements as $announcement): ?>
+                            <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
+                                <h4><strong><?php echo htmlspecialchars($announcement['TITLE']); ?></strong></h4>
+                                <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
+                                <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
+                    <?php endif; ?>
+                </div>
                 </div>
             </div>
         <div class="w3-col m6"> 

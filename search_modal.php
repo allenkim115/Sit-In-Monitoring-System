@@ -30,12 +30,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
     $result_check_sitin = $stmt_check_sitin->get_result();
 
     if ($result_check_sitin->num_rows > 0) {
-        $sitin_error = "The user is already sitting in. Please Time Out the user first.";
+        $sitin_error = "Student is already sitting in. Time out the student first.";
+        $show_sitin_form = true;  // Keep showing the form
+        $show_result_modal = true; // Keep the modal open
+        
+        // Fetch the student info again to display it
+        $sql_student_info = "SELECT * FROM user WHERE IDNO = ?";
+        $stmt_student_info = $conn->prepare($sql_student_info);
+        $stmt_student_info->bind_param("i", $user_id);
+        $stmt_student_info->execute();
+        $result_student_info = $stmt_student_info->get_result();
+        if ($result_student_info->num_rows > 0) {
+            $student_found = $result_student_info->fetch_assoc();
+        }
+        $stmt_student_info->close();
+
+        // Add a flag to auto-close the error message
+        $auto_close_error = true;
     } else {
         $sql_add_sitin = "INSERT INTO sitin_records (IDNO, PURPOSE, LABORATORY, TIME_IN) VALUES (?, ?, ?, NOW())";
         $stmt_add_sitin = $conn->prepare($sql_add_sitin);
         $stmt_add_sitin->bind_param("iss", $user_id, $purpose, $laboratory);
-
+    
         if ($stmt_add_sitin->execute()) {
             $sitin_success = "Sitin record added successfully";
             $show_sitin_form = false;
@@ -43,16 +59,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_sitin_user_id']) &
             $student_found = null;
             $close_modal_on_success = true;
             
-            // Add this code here:
             echo "<script>
-                         alert('Student added successfully');
-                         window.location.href = 'currentSitin.php';
-                       </script>";
+                     alert('Student added successfully');
+                     window.location.href = 'currentSitin.php';
+                   </script>";
             exit;
         } else {
             $sitin_error = "Error adding sitin record. Please try again";
         }
-        $stmt_add_sitin->close();
+        $stmt_add_sitin->close();  
     }
 
     $stmt_check_sitin->close();
@@ -120,11 +135,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
         <header class="w3-container">
             <!-- Remove the onclick that reopens the search modal -->
             <span onclick="document.getElementById('resultModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
+            <h2 style="text-transform:uppercase;">Search Result</h2>
         </header>
+        <?php if ($sitin_error) : ?>
+                    <p class="w3-text-red w3-center"><?php echo htmlspecialchars($sitin_error); ?></p>
+        <?php endif; ?>
         <?php if ($student_found) : ?>
-            <div class="w3-container w3-center w3-margin-top">
-                <img src="<?php echo htmlspecialchars($student_found['PROFILE_PIC'] ? $student_found['PROFILE_PIC'] : 'images/default_pic.png'); ?>" alt="User Profile" style="width: 100px; height: 100px; border-radius: 50%;">
-            </div>
             <div class="w3-container" style="margin: 0 10%;">
                 <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($student_found['IDNO']); ?></p>
                 <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($student_found['FIRSTNAME'] . ' ' . $student_found['MIDDLENAME'] . ' ' . $student_found['LASTNAME']); ?></p>
@@ -133,10 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                 <p><i class="fa-solid fa-clock"></i> <strong>Remaining Session:</strong> <?php echo htmlspecialchars($student_found['SESSION_COUNT']); ?></p>
             </div>
         <?php endif; ?>
-        <?php if ($show_sitin_form) : ?>
-            <?php if ($sitin_error) : ?>
-                <p class="w3-text-red w3-center"><?php echo htmlspecialchars($sitin_error); ?></p>
-            <?php endif; ?>
+        <?php if ($show_sitin_form && !$sitin_error) : ?>
             <?php if ($sitin_success) : ?>
                 <p class="w3-text-green w3-center"><?php echo htmlspecialchars($sitin_success); ?></p>
             <?php endif; ?>
@@ -188,6 +201,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
                     // Reload the page to reset all PHP variables
                     window.location.reload();
                 }, 2000); // Close after 2 seconds
+            <?php endif; ?>
+            
+            <?php if (isset($auto_close_error) && $auto_close_error): ?>
+                // Close result modal and show search modal after error
+                setTimeout(function() {
+                    document.getElementById('resultModal').style.display = 'none';
+                    document.getElementById('searchModal').style.display = 'block';
+                    // Reset the error message
+                    <?php $sitin_error = null; ?>
+                }, 3000); // Show error for 2 seconds
             <?php endif; ?>
         <?php endif; ?>
         <?php if ($show_search_modal && !$show_result_modal): ?>

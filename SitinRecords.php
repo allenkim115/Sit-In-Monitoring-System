@@ -52,8 +52,10 @@ if ($result_sitins->num_rows > 0) {
 }
 $stmt_sitins->close();
 
-// Get purpose statistics
-$sql_purpose_stats = "SELECT PURPOSE, COUNT(*) as count FROM sitin_records GROUP BY PURPOSE ORDER BY count DESC";
+// Get purpose statistics for today only
+$sql_purpose_stats = "SELECT PURPOSE, COUNT(*) as count FROM sitin_records 
+                      WHERE DATE(TIME_IN) = CURDATE() OR (TIME_OUT IS NOT NULL AND DATE(TIME_OUT) = CURDATE())
+                      GROUP BY PURPOSE ORDER BY count DESC";
 $result_purpose_stats = $conn->query($sql_purpose_stats);
 $purpose_labels = [];
 $purpose_data = [];
@@ -65,8 +67,10 @@ if ($result_purpose_stats->num_rows > 0) {
     }
 }
 
-// Get laboratory statistics
-$sql_lab_stats = "SELECT LABORATORY, COUNT(*) as count FROM sitin_records GROUP BY LABORATORY ORDER BY count DESC";
+// Get laboratory statistics for today only
+$sql_lab_stats = "SELECT LABORATORY, COUNT(*) as count FROM sitin_records 
+                  WHERE DATE(TIME_IN) = CURDATE() OR (TIME_OUT IS NOT NULL AND DATE(TIME_OUT) = CURDATE())
+                  GROUP BY LABORATORY ORDER BY count DESC";
 $result_lab_stats = $conn->query($sql_lab_stats);
 $lab_labels = [];
 $lab_data = [];
