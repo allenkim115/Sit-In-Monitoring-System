@@ -38,6 +38,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_session_id'])) {
     exit;
 }
 
+// Handle reset all sessions action
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_all_sessions'])) {
+    $default_session_count = 30; // Define the default session count
+
+    $sql_reset_all = "UPDATE user SET SESSION_COUNT = ?";
+    $stmt_reset_all = $conn->prepare($sql_reset_all);
+    $stmt_reset_all->bind_param("i", $default_session_count);
+
+    if ($stmt_reset_all->execute()) {
+        $_SESSION['reset_success'] = "Session count reset successfully for all students";
+    } else {
+        $_SESSION['reset_error'] = "Error resetting session count for all students";
+    }
+
+    $stmt_reset_all->close();
+    header("Location: list.php"); // Redirect to refresh the page
+    exit;
+}
+
 // Fetch all users from the database with filtering and search
 $sql_users = "SELECT IDNO, FIRSTNAME, MIDDLENAME, LASTNAME, COURSE, YEAR_LEVEL, PROFILE_PIC, SESSION_COUNT FROM user WHERE 1=1"; // Base query - **ADDED SESSION_COUNT**
 
@@ -177,8 +196,8 @@ include 'search_modal.php';
         <a href="#" onclick="document.getElementById('searchModal').style.display='block'" class="w3-bar-item w3-button"><i class="fa-solid fa-magnifying-glass w3-padding"></i><span>Search</span></a>
         <a href="list.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-user w3-padding"></i><span>Students</span></a>
         <a href="currentSitin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
-        <a href="SitinRecords.php" class="w3-bar-item w3-button"><i class="fa-solid fa-clipboard-list w3-padding"></i><span>Sit-in Reports</span></a>
-        <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
+        <a href="SitinReports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-chart-bar w3-padding"></i><span>Sit-in Reports</span></a>
+        <a href="feedback_reports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
     </div>
@@ -248,6 +267,13 @@ include 'search_modal.php';
                         <a href="list.php" class="w3-button w3-gray w3-round-large w3-small">Clear Filters</a>
                     </form>
                 </div>
+            </div>
+            <div class="w3-margin-bottom">
+                <form method="POST" onsubmit="return confirm('Are you sure you want to reset the session count for ALL students?');">
+                    <button type="submit" name="reset_all_sessions" class="w3-button w3-red w3-round-large">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset All Sessions
+                    </button>
+                </form>
             </div>
             <table class="user-table">
                 <thead>
