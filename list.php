@@ -9,6 +9,33 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_
     exit;
 }
 
+// Handle delete user action
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_user_id'])) {
+    $delete_user_id = $_POST['delete_user_id'];
+    
+    // First delete related records from sitin_records table
+    $sql_delete_sitins = "DELETE FROM sitin_records WHERE IDNO = ?";
+    $stmt_delete_sitins = $conn->prepare($sql_delete_sitins);
+    $stmt_delete_sitins->bind_param("s", $delete_user_id);
+    $stmt_delete_sitins->execute();
+    
+    // Then delete the user
+    $sql_delete_user = "DELETE FROM user WHERE IDNO = ?";
+    $stmt_delete_user = $conn->prepare($sql_delete_user);
+    $stmt_delete_user->bind_param("s", $delete_user_id);
+    
+    if ($stmt_delete_user->execute()) {
+        $_SESSION['delete_success'] = "User successfully deleted";
+    } else {
+        $_SESSION['delete_error'] = "Error deleting user";
+    }
+    
+    $stmt_delete_sitins->close();
+    $stmt_delete_user->close();
+    header("Location: list.php");
+    exit;
+}
+
 //get the profile picture from database
 $username = $_SESSION['user']['USERNAME']; // Assuming you store username in session
 $sql_profile = "SELECT PROFILE_PIC FROM user WHERE USERNAME = ?";
@@ -133,16 +160,25 @@ include 'search_modal.php';
         font-size: 0.9em; /* Added smaller font size */
     }
     .user-table td.action-buttons {
-        width: 60px; /* Adjust as needed */
+        width: 160px; /* Increased from 150px to accommodate larger buttons */
+        white-space: nowrap;
+    }
+    .user-table td.action-buttons .w3-bar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2px; /* Added small gap between buttons */
     }
     .user-table td.action-buttons form {
-        text-align: center;
+        margin: 0;
     }
-    .user-table .w3-button.w3-blue {
+    .user-table .w3-button {
+        padding: 5px 10px; /* Increased from 3px 6px */
         position: relative;
-        overflow: visible;
     }
-
+    .user-table .w3-button i {
+        font-size: 15px; /* Increased from 13px */
+    }
     .user-table th {
         background-color: #f0fff0;
     }
@@ -164,21 +200,53 @@ include 'search_modal.php';
     .user-table {
         line-height: 1.2;
     }
-    /* Tooltip container */
+    /* Tooltip styling */
+    .w3-button {
+        position: relative;
+    }
     .tooltip {
-        position: absolute;
-        background-color: #333;
+        visibility: hidden;
+        width: auto;
+        background-color: #555;
         color: #fff;
+        text-align: center;
+        border-radius: 6px;
         padding: 5px 10px;
-        border-radius: 4px;
-        z-index: 10;
-        white-space: nowrap;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
-        bottom: 100%;
-        opacity: 0;
+        white-space: nowrap;
+        font-size: 12px;
+        pointer-events: none;
     }
-    
+
+    .tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+    }
+
+    .w3-button:hover .tooltip {
+        visibility: visible;
+    }
+
+    /* Add hover effect for buttons */
+    .w3-button.w3-blue:hover {
+        background-color: #0b7dda !important;
+    }
+    .w3-button.w3-green:hover {
+        background-color: #4CAF50 !important;
+    }
+    .w3-button.w3-red:hover {
+        background-color: #f44336 !important;
+    }
 </style>
 
 </head>
@@ -237,6 +305,36 @@ include 'search_modal.php';
                     }, 2000);
                 </script>
                 <?php unset($_SESSION['reset_error']); ?>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['delete_success'])): ?>
+                <div id="deleteSuccess" class="w3-panel w3-green w3-display-container">
+                    <p><?php echo htmlspecialchars($_SESSION['delete_success']); ?></p>
+                </div>
+                <script>
+                    setTimeout(function() {
+                        var deleteSuccess = document.getElementById('deleteSuccess');
+                        if (deleteSuccess) {
+                            deleteSuccess.style.display = 'none';
+                        }
+                    }, 2000);
+                </script>
+                <?php unset($_SESSION['delete_success']); ?>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['delete_error'])): ?>
+                <div id="deleteError" class="w3-panel w3-red w3-display-container">
+                    <p><?php echo htmlspecialchars($_SESSION['delete_error']); ?></p>
+                </div>
+                <script>
+                    setTimeout(function() {
+                        var deleteError = document.getElementById('deleteError');
+                        if (deleteError) {
+                            deleteError.style.display = 'none';
+                        }
+                    }, 2000);
+                </script>
+                <?php unset($_SESSION['delete_error']); ?>
             <?php endif; ?>
             <!-- Search Bar -->
             <div class="w3-row w3-margin-bottom">
@@ -300,13 +398,26 @@ include 'search_modal.php';
                                 <td><?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></td>
                                 <td><?php echo htmlspecialchars($user['SESSION_COUNT']); ?></td>
                                 <td class="action-buttons">
-                                    <form method="POST" onsubmit="return confirm('Are you sure you want to reset the session count for this user?');">
-                                        <input type="hidden" name="reset_session_id" value="<?php echo htmlspecialchars($user['IDNO']); ?>">
-                                        <button type="submit" class="w3-button w3-blue w3-round-large w3-small">
-                                            <i class="fa-solid fa-arrow-rotate-left"></i>
-                                            <span class="tooltip">Reset Session</span>
+                                    <div class="w3-bar">
+                                        <form method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reset the session count for this user?');">
+                                            <input type="hidden" name="reset_session_id" value="<?php echo htmlspecialchars($user['IDNO']); ?>">
+                                            <button type="submit" class="w3-button w3-blue w3-round-large w3-small" style="margin-right: 5px;" title="Reset Session">
+                                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                                <div class="tooltip">Reset Session</div>
+                                            </button>
+                                        </form>
+                                        <button class="w3-button w3-green w3-round-large w3-small" style="margin-right: 5px;" onclick="window.location.href='edit_user.php?id=<?php echo htmlspecialchars($user['IDNO']); ?>'" title="Edit User">
+                                            <i class="fa-solid fa-edit"></i>
+                                            <div class="tooltip">Edit User</div>
                                         </button>
-                                    </form>
+                                        <form method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                                            <input type="hidden" name="delete_user_id" value="<?php echo htmlspecialchars($user['IDNO']); ?>">
+                                            <button type="submit" class="w3-button w3-red w3-round-large w3-small" title="Delete User">
+                                                <i class="fa-solid fa-trash"></i>
+                                                <div class="tooltip">Delete User</div>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -321,7 +432,6 @@ include 'search_modal.php';
     </div>
 
     <script>
-
         function w3_open() {
             document.getElementById("mySidebar").style.display = "block";
         }
@@ -330,20 +440,26 @@ include 'search_modal.php';
             document.getElementById("mySidebar").style.display = "none";
         }
 
-        // Add hover effect for tooltip
+        // Add hover effect for tooltips
         document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.w3-button.w3-blue');
+            const buttons = document.querySelectorAll('.action-buttons .w3-button');
+            
             buttons.forEach(button => {
-                const tooltip = button.querySelector('.tooltip');
-                button.addEventListener('mouseover', () => {
-                    tooltip.style.opacity = 1;
+                button.addEventListener('mouseenter', function() {
+                    const tooltip = this.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.visibility = 'visible';
+                    }
                 });
-                button.addEventListener('mouseout', () => {
-                    tooltip.style.opacity = 0;
+                
+                button.addEventListener('mouseleave', function() {
+                    const tooltip = this.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.style.visibility = 'hidden';
+                    }
                 });
             });
         });
-
     </script>
 </body>
 </html>

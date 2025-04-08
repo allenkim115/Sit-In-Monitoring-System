@@ -59,24 +59,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['timeout_id'])) {
         $conn->rollback();
         echo "Error: " . $e->getMessage();
     } 
-
-    // Check if search term is submitted
-    if (isset($_GET['search']) && !empty($_GET['search'])) {
-        $search_term = mysqli_real_escape_string($conn, $_GET['search']);
-        // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME)
-        $sql_sitins .= " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
-    }
-
-    // Add order by clause
-    $sql_sitins .= " ORDER BY sr.TIME_IN DESC";
-    $stmt_timeout->close();
 }
 
-// Fetch current sit-in records (where time_out is NULL)
-$sql_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN
+// Base SQL query for current sit-ins
+$sql_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, u.SESSION_COUNT
                FROM sitin_records sr
                JOIN user u ON sr.IDNO = u.IDNO
                WHERE sr.TIME_OUT IS NULL";
+
+// Check if search term is submitted
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $search_term = mysqli_real_escape_string($conn, $_GET['search']);
+    // Search by IDNO or name while maintaining current sit-in filter
+    $sql_sitins .= " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+}
+
+// Add order by clause
+$sql_sitins .= " ORDER BY sr.TIME_IN DESC";
+
+// Execute the query
 $result_sitins = $conn->query($sql_sitins);
 
 $sitin_records = [];
@@ -169,21 +170,6 @@ include 'search_modal.php';
                         <th>Action</th>
                     </tr>
                 </thead>
-                <?php
-                //Modified SQL Query to fetch records
-                $sql_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, u.SESSION_COUNT
-                                FROM sitin_records sr 
-                                JOIN user u ON sr.IDNO = u.IDNO
-                                WHERE sr.TIME_OUT IS NULL";
-                $result_sitins = $conn->query($sql_sitins);
-
-                $sitin_records = [];
-                if ($result_sitins->num_rows > 0) {
-                    while ($row = $result_sitins->fetch_assoc()) {
-                        $sitin_records[] = $row;
-                    }
-                }
-                ?>
                 <tbody>
                 <?php if (isset($timeout_success)) : ?>                    
                     <div id="timeoutSuccess" class="w3-panel w3-green w3-display-container">
@@ -199,30 +185,30 @@ include 'search_modal.php';
                     </script>
                 <?php endif; ?>
                 <?php if (count($sitin_records) > 0) : ?>
-                    <?php else : ?>
+                    <?php foreach ($sitin_records as $record) : ?>
                         <tr>
-                            <td colspan="7">No current sit-ins found.</td>
+                            <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
+                            <td><?php echo htmlspecialchars($record['FIRSTNAME']); ?></td>
+                            <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
+                            <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
+                            <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
+                            <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
+                            <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
+                            <td style="text-align: center;">
+                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
+                                    <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                    <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                    <button type="submit" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
+                                </form>                                    
+                            </td>
                         </tr>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="8">No current sit-ins found.</td>
+                    </tr>
+                <?php endif; ?>
                 </tbody>
-                <?php foreach ($sitin_records as $record) : ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
-                                <td><?php echo htmlspecialchars($record['FIRSTNAME']); ?></td>
-                                <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
-                                <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
-                                <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
-                                <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
-                                <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
-                                <td style="text-align: center;">
-                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
-                                        <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
-                                        <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
-                                        <button type="submit" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
-                                    </form>                                    
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
             </table>
         </div>
     </div>

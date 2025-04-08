@@ -10,6 +10,13 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 // Retrieve user data from the session
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 
+//get the session count from database
+$sql_session = "SELECT SESSION_COUNT FROM user WHERE IDNO = ?";
+$stmt_session = $conn->prepare($sql_session);
+$stmt_session->bind_param("s", $user['IDNO']);
+$stmt_session->execute();
+$result_session = $stmt_session->get_result()->fetch_assoc();
+
 // Number of records per page
 $records_per_page = isset($_GET['entries']) ? (int)$_GET['entries'] : 10;
 
@@ -19,7 +26,7 @@ $offset = ($page - 1) * $records_per_page;
 
 // Search functionality
 $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
-$search_condition = " WHERE s.IDNO = " . $user['IDNO']; // Base condition to show only current user's records
+$search_condition = " WHERE s.IDNO = " . $user['IDNO'] . " AND s.TIME_OUT IS NOT NULL"; // Base condition to show only current user's completed records
 if (!empty($search)) {
     $search_condition .= " AND (s.PURPOSE LIKE '%$search%' OR s.LABORATORY LIKE '%$search%')";
 }
@@ -121,6 +128,31 @@ $result = $conn->query($sql);
         <a href="logout.php" class="w3-bar-item w3-button">
             <i class="fa-solid fa-right-to-bracket w3-padding"></i>Log Out
         </a>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile" class="w3-modal" style="z-index: 1000;">
+        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
+            <header class="w3-container"> 
+                <span onclick="document.getElementById('profile').style.display='none'" 
+                      class="w3-button w3-display-topright">&times;</span>
+                <h2 style="text-transform:uppercase;">Profile</h2>
+            </header>
+            <div class="display_photo w3-container w3-center">
+                <img src="<?php echo htmlspecialchars($user['PROFILE_PIC']); ?>" alt="profile_pic" style="width: 120px; height:120px; border-radius: 50%; border: 2px solid rgba(100,25,117,1);">
+            </div>
+            <hr style="margin: 1rem 10%; border-width: 2px;">
+            <div class="w3-container" style="margin: 0 10%;">
+                <p><i class="fa-solid fa-id-card"></i> <strong>IDNO:</strong> <?php echo htmlspecialchars($user['IDNO']); ?></p>
+                <p><i class="fa-solid fa-user"></i> <strong>Name:</strong> <?php echo htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['MIDDLENAME'] . ' ' . $user['LASTNAME']); ?></p>
+                <p><i class="fa-solid fa-book"></i> <strong>Course:</strong> <?php echo htmlspecialchars($user['COURSE']); ?></p>
+                <p><i class="fa-solid fa-graduation-cap"></i> <strong>Level:</strong> <?php echo htmlspecialchars($user['YEAR_LEVEL']); ?></p>
+                <p><i class="fa-solid fa-stopwatch"></i> <strong>Session:</strong> <?php echo htmlspecialchars($result_session['SESSION_COUNT']); ?></p>
+            </div>
+            <footer class="w3-container w3-padding" style="margin: 0 30%;">
+                <button class="w3-btn w3-purple w3-round-xlarge" onclick="window.location.href='profile.php'">Edit Profile</button>
+            </footer>
+        </div>
     </div>
 
     <!-- Main content -->

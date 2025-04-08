@@ -29,8 +29,9 @@ $sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Nam
 // Check if search term is submitted
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search_term = mysqli_real_escape_string($conn, $_GET['search']);
-    // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME)
-    $sql_sitins .= " WHERE (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME) while maintaining today's date filter
+    $sql_sitins .= " WHERE (DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE()))
+                    AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
 } else {
     // Default: show today's records
     $sql_sitins .= " WHERE DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE())";
