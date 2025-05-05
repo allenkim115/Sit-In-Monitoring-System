@@ -26,6 +26,32 @@ $stmt_session->bind_param("s", $user['IDNO']);
 $stmt_session->execute();
 $result_session = $stmt_session->get_result()->fetch_assoc();
 
+// Get top 5 users by points
+$sql_leaderboard = "SELECT IDNO, FIRSTNAME, LASTNAME, POINTS FROM user ORDER BY POINTS DESC, FIRSTNAME ASC LIMIT 5";
+$result_leaderboard = $conn->query($sql_leaderboard);
+$leaderboard = [];
+if($result_leaderboard->num_rows > 0){
+    while ($row = $result_leaderboard->fetch_assoc()){
+        $leaderboard[] = $row;
+    }
+}
+
+// Get current user's rank
+$sql_user_rank = "SELECT COUNT(*) as rank FROM user WHERE POINTS > (SELECT POINTS FROM user WHERE IDNO = ?)";
+$stmt_user_rank = $conn->prepare($sql_user_rank);
+$stmt_user_rank->bind_param("s", $user['IDNO']);
+$stmt_user_rank->execute();
+$result_user_rank = $stmt_user_rank->get_result()->fetch_assoc();
+$user_rank = $result_user_rank['rank'] + 1;
+
+// Get current user's points
+$sql_user_points = "SELECT POINTS FROM user WHERE IDNO = ?";
+$stmt_user_points = $conn->prepare($sql_user_points);
+$stmt_user_points->bind_param("s", $user['IDNO']);
+$stmt_user_points->execute();
+$result_user_points = $stmt_user_points->get_result()->fetch_assoc();
+$user_points = $result_user_points['POINTS'];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -60,6 +86,8 @@ $result_session = $stmt_session->get_result()->fetch_assoc();
     <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
     <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-edit w3-padding"></i><span>Edit Profile</span></a>
     <a href="history.php" class="w3-bar-item w3-button"><i class="fa-solid fa-clock-rotate-left w3-padding"></i><span>History</span></a>
+    <a href="view_lab_schedules.php" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar w3-padding"></i><span>Lab Schedules</span></a>
+    <a href="view_lab_resources.php" class="w3-bar-item w3-button"><i class="fa-solid fa-book w3-padding"></i><span>Lab Resources</span></a>
     <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
     <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
 </div>
@@ -134,28 +162,7 @@ $result_session = $stmt_session->get_result()->fetch_assoc();
                     });
                 </script>
             </div>
-            <!---Announcement---->
-            <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-margin-bottom w3-animate-top" style="width: 100%;">
-                <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
-                    <i class="fa-solid fa-bullhorn"></i>
-                    <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
-                  </div>
-                  <div id="announcements-list" class="w3-margin-top" style="height:115px; overflow-y: auto;">
-                    <?php if (count($announcements) > 0): ?>
-                        <?php foreach ($announcements as $announcement): ?>
-                            <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
-                                <h4><strong><?php echo htmlspecialchars($announcement['TITLE']); ?></strong></h4>
-                                <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
-                                <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
-                    <?php endif; ?>
-                </div>
-                </div>
-            </div>
-        <div class="w3-col m6"> 
+            <!---Rules and Regulations---->
             <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 450px;">
                 <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
                     <h3><i class="fa-brands fa-readme w3-padding"></i>Rules and Regulation</h3>
@@ -195,6 +202,76 @@ $result_session = $stmt_session->get_result()->fetch_assoc();
                         <li>First Offense - The Head or the Dean or OIC recommends to the Guidance Center for a suspension from classes for each offender.</li>
                         <li>Second and Subsequent Offenses - A recommendation for a heavier sanction will be endorsed to the Guidance Center.</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+        <div class="w3-col m6"> 
+            <!---Announcement---->
+            <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-margin-bottom w3-animate-top" style="width: 100%;">
+                <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <h3 style="margin-left: 10px; color: #ffff;">Announcement</h3>
+                  </div>
+                  <div id="announcements-list" class="w3-margin-top" style="height:115px; overflow-y: auto;">
+                    <?php if (count($announcements) > 0): ?>
+                        <?php foreach ($announcements as $announcement): ?>
+                            <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple">
+                                <h4><strong><?php echo htmlspecialchars($announcement['TITLE']); ?></strong></h4>
+                                <p><?php echo htmlspecialchars($announcement['MESSAGE']); ?></p>
+                                <small>Posted on: <?php echo date("Y-m-d H:i:s", strtotime($announcement['TIMESTAMP'])); ?></small>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <!---Leaderboard---->
+            <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 450px;">
+                <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
+                    <i class="fa-solid fa-trophy"></i>
+                    <h3 style="margin-left: 10px; color: #ffff;">Leaderboard</h3>
+                </div>
+                <div class="w3-margin-top">
+                    <table class="w3-table w3-bordered w3-striped">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($leaderboard) > 0): ?>
+                                <?php foreach ($leaderboard as $index => $leader): ?>
+                                    <?php
+                                        $row_class = '';
+                                        $icon = '<i class="fa-solid fa-user leaderboard-icon"></i>';
+                                        if ($index === 0) {
+                                            $icon = '<i class="fa-solid fa-trophy leaderboard-icon" style="color:gold;"></i>';
+                                        } elseif ($index === 1) {
+                                            $icon = '<i class="fa-solid fa-medal leaderboard-icon" style="color:silver;"></i>';
+                                        } elseif ($index === 2) {
+                                            $icon = '<i class="fa-solid fa-medal leaderboard-icon" style="color:#cd7f32;"></i>';
+                                        }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo $index + 1; ?></td>
+                                        <td><?php echo $icon . ' ' . htmlspecialchars($leader['FIRSTNAME'] . ' ' . $leader['LASTNAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($leader['POINTS']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="3">No leaderboard data available.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                    <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple w3-margin-top">
+                        <p>Your Rank: #<?php echo $user_rank; ?></p>
+                        <p>Your Points: <?php echo $user_points; ?></p>
+                    </div>
                 </div>
             </div>
         </div>

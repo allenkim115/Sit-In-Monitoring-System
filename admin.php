@@ -138,6 +138,17 @@ if ($result_sitins->num_rows > 0) {
         $sitin_records[] = $row;
     }
 }
+
+// Fetch top 5 users by points for leaderboard
+$sql_leaderboard = "SELECT IDNO, FIRSTNAME, LASTNAME, POINTS FROM user ORDER BY POINTS DESC, FIRSTNAME ASC LIMIT 5";
+$result_leaderboard = $conn->query($sql_leaderboard);
+$leaderboard = [];
+if ($result_leaderboard->num_rows > 0) {
+    while ($row = $result_leaderboard->fetch_assoc()) {
+        $leaderboard[] = $row;
+    }
+}
+
 include 'search_modal.php';
 ?>
 
@@ -171,6 +182,7 @@ include 'search_modal.php';
             flex-grow: 1;
             margin: 0 5px;
         }
+        .leaderboard-icon { font-size: 1.2em; margin-right: 5px; }
     </style>
 </head>
 
@@ -189,6 +201,8 @@ include 'search_modal.php';
         <a href="currentSitin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
         <a href="SitinReports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-chart-bar w3-padding"></i><span>Sit-in Reports</span></a>
         <a href="feedback_reports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
+        <a href="lab_schedule.php" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar w3-padding"></i><span>Lab Schedule</span></a>
+        <a href="lab_resources.php" class="w3-bar-item w3-button"><i class="fa-solid fa-book w3-padding"></i><span>Lab Resources</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
     </div>
@@ -199,6 +213,49 @@ include 'search_modal.php';
         </div>
         <div class="w3-row-padding" style="margin: 5% 10px;">
             <div class="w3-col m6">
+                <!---Leaderboard---->
+                <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; margin-bottom: 20px;">
+                    <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
+                        <h3><i class="fa-solid fa-trophy w3-padding"></i>Leaderboard</h3>
+                    </div>
+                    <table class="w3-table w3-bordered w3-striped w3-margin-top">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>ID No</th>
+                                <th>Name</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (count($leaderboard) > 0): ?>
+                                <?php foreach ($leaderboard as $index => $user): ?>
+                                    <?php
+                                        $row_class = '';
+                                        $icon = '<i class="fa-solid fa-user leaderboard-icon"></i>';
+                                        if ($index === 0) {
+                                            $icon = '<i class="fa-solid fa-trophy leaderboard-icon" style="color:gold;"></i>';
+                                        } elseif ($index === 1) {
+                                            $icon = '<i class="fa-solid fa-medal leaderboard-icon" style="color:silver;"></i>';
+                                        } elseif ($index === 2) {
+                                            $icon = '<i class="fa-solid fa-medal leaderboard-icon" style="color:#cd7f32;"></i>';
+                                        }
+                                    ?>
+                                    <tr>
+                                        <td><?php echo $index + 1; ?></td>
+                                        <td><?php echo htmlspecialchars($user['IDNO']); ?></td>
+                                        <td><?php echo $icon . htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['LASTNAME']); ?></td>
+                                        <td><?php echo htmlspecialchars($user['POINTS']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4">No data available.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
                 <!---Announcement---->
                 <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-margin-bottom w3-animate-top" style="width: 100%;">
                     <div class="w3-purple w3-container w3-round-xlarge" style="display: flex; align-items: center;">
@@ -243,84 +300,83 @@ include 'search_modal.php';
                             <p style="font-size: 18px; color: #333; font-family: Arial, sans-serif; margin-top: 20px;">No announcement for today.</p>
                         <?php endif; ?>
                     </div>
-
                 </div>
             </div>
             <div class="w3-col m6">
-        <!---Statistics---->
-        <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 700px;">
-            <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
-                <h3><i class="fa-solid fa-chart-simple w3-padding"></i>Statistics</h3>
-            </div>
-            
-            <!-- New Statistics Cards -->
-            <div class="statistics-card" style="margin-top: 50px;">
-                <div class="stat-item">
-                    <h4>Registered Students</h4>
-                    <p class="w3-large w3-text-purple"><?php echo $total_registered; ?></p>
+                <!---Statistics---->
+                <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-padding w3-animate-top" style="width: 100%; height: 700px;">
+                    <div class="w3-mobile w3-round-xlarge w3-card-4 w3-container w3-purple">
+                        <h3><i class="fa-solid fa-chart-simple w3-padding"></i>Statistics</h3>
+                    </div>
+                    <!-- New Statistics Cards -->
+                    <div class="statistics-card" style="margin-top: 50px;">
+                        <div class="stat-item">
+                            <h4>Registered Students</h4>
+                            <p class="w3-large w3-text-purple"><?php echo $total_registered; ?></p>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Current Sit-ins</h4>
+                            <p class="w3-large w3-text-purple"><?php echo $current_sitins; ?></p>
+                        </div>
+                        <div class="stat-item">
+                            <h4>Total Sit-ins</h4>
+                            <p class="w3-large w3-text-purple"><?php echo $total_sitins; ?></p>
+                        </div>
+                    </div>
+                    <div class="w3-container" style="width: 100%; height: 400px;">
+                        <canvas id="purposeChart"></canvas>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <h4>Current Sit-ins</h4>
-                    <p class="w3-large w3-text-purple"><?php echo $current_sitins; ?></p>
-                </div>
-                <div class="stat-item">
-                    <h4>Total Sit-ins</h4>
-                    <p class="w3-large w3-text-purple"><?php echo $total_sitins; ?></p>
-                </div>
-            </div>
-
-            <div class="w3-container" style="width: 100%; height: 400px;">
-                <canvas id="purposeChart"></canvas>
             </div>
         </div>
-    </div>
-            <script>
-                function w3_open() {
-                    document.getElementById("mySidebar").style.display = "block";
-                }
+        <script>
+            function w3_open() {
+                document.getElementById("mySidebar").style.display = "block";
+            }
 
-                function w3_close() {
-                    document.getElementById("mySidebar").style.display = "none";
-                }
+            function w3_close() {
+                document.getElementById("mySidebar").style.display = "none";
+            }
 
-                      //pie chart for purposes
-                var ctx = document.getElementById('purposeChart').getContext('2d');
-                var myChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: <?php echo $chart_labels; ?>,
-                        datasets: [{
-                            data: <?php echo $chart_data; ?>,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.8)',
-                                'rgba(54, 162, 235, 0.8)',
-                                'rgba(255, 206, 86, 0.8)',
-                                'rgba(75, 192, 192, 0.8)',
-                                'rgba(153, 102, 255, 0.8)',
-                                'rgba(255, 159, 64, 0.8)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Sit-in Purposes Distribution'
-                            }
+            //pie chart for purposes
+            var ctx = document.getElementById('purposeChart').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: <?php echo $chart_labels; ?>,
+                    datasets: [{
+                        data: <?php echo $chart_data; ?>,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Sit-in Purposes Distribution'
                         }
                     }
-                });
-            </script>
+                }
+            });
+        </script>
+    </div>
 </body>
 </html>

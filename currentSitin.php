@@ -45,11 +45,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['timeout_id'])) {
         $stmt_deduct_session->bind_param("s", $timeout_id);
         $stmt_deduct_session->execute();
 
+        // If reward button was pressed, add points
+        if (isset($_POST['timeout_reward'])) {
+            $reward_points = 1;
+            $sql_reward = "UPDATE user SET POINTS = IFNULL(POINTS, 0) + ? WHERE IDNO = ?";
+            $stmt_reward = $conn->prepare($sql_reward);
+            $stmt_reward->bind_param("is", $reward_points, $timeout_id);
+            $stmt_reward->execute();
+
+            // Fetch the updated total points
+            $sql_fetch_points = "SELECT POINTS FROM user WHERE IDNO = ?";
+            $stmt_fetch_points = $conn->prepare($sql_fetch_points);
+            $stmt_fetch_points->bind_param("s", $timeout_id);
+            $stmt_fetch_points->execute();
+            $result_fetch_points = $stmt_fetch_points->get_result();
+            $user_points = $result_fetch_points->fetch_assoc()['POINTS'];
+        }
+
         // Commit the transaction
         $conn->commit();
 
         // Set success message in session
-        $_SESSION['timeout_success'] = "Time out successful!";
+        if (isset($_POST['timeout_reward'])) {
+            $_SESSION['timeout_success'] = "Student logged out and earned 1 point! (Total points: $user_points)";
+        } else {
+            $_SESSION['timeout_success'] = "Time out successful!";
+        }
 
         // Redirect to currentSitin.php
         header("Location: currentSitin.php");
@@ -135,6 +156,8 @@ include 'search_modal.php';
         <a href="currentSitin.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
         <a href="SitinReports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-chart-bar w3-padding"></i><span>Sit-in Reports</span></a>
         <a href="feedback_reports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-comment-dots w3-padding"></i><span>Feedback Reports</span></a>
+        <a href="lab_schedule.php" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar w3-padding"></i><span>Lab Schedule</span></a>
+        <a href="lab_resources.php" class="w3-bar-item w3-button"><i class="fa-solid fa-book w3-padding"></i><span>Lab Resources</span></a>
         <a href="#" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
         <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i><span>Log Out</span></a>
     </div>
@@ -171,9 +194,10 @@ include 'search_modal.php';
                     </tr>
                 </thead>
                 <tbody>
-                <?php if (isset($timeout_success)) : ?>                    
-                    <div id="timeoutSuccess" class="w3-panel w3-green w3-display-container">
-                        <p><?php echo htmlspecialchars($timeout_success); ?></p>
+                <?php if (isset($_SESSION['timeout_success'])) : ?>                    
+                    <div id="timeoutSuccess" class="w3-panel w3-green w3-display-container" style="margin-bottom: 20px;">
+                        <span class="w3-xlarge" style="margin-right: 8px;">&#x2714;</span>
+                        <?php echo htmlspecialchars($_SESSION['timeout_success']); unset($_SESSION['timeout_success']); ?>
                     </div>
                     <script>
                         setTimeout(function() {
@@ -195,11 +219,18 @@ include 'search_modal.php';
                             <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
                             <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
                             <td style="text-align: center;">
+                                <!-- Regular Time Out -->
                                 <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
                                     <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
                                     <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
-                                    <button type="submit" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
-                                </form>                                    
+                                    <button type="submit" name="timeout_regular" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
+                                </form>
+                                <!-- Time Out with Reward -->
+                                <form method="POST" style="display: inline;" onsubmit="return confirm('Time out and reward this user?');">
+                                    <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                    <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                    <button type="submit" name="timeout_reward" class="w3-button w3-green w3-round-large w3-small">Time Out + Reward</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>

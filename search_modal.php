@@ -104,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
 <!-- Search Modal -->
 <div id="searchModal" class="w3-modal" style="z-index: 1000; display: none;">
     <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-        <header class="w3-container">
+        <header class="w3-container" style="position:relative;">
             <span onclick="document.getElementById('searchModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
             <h2 style="text-transform:uppercase;">Search Student</h2>
         </header>
@@ -132,8 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_idno'])) {
 <!-- Result Modal -->
 <div id="resultModal" class="w3-modal" style="z-index: 1001; display: <?php echo ($show_result_modal) ? 'block' : 'none'; ?>;">
     <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 30%;">
-        <header class="w3-container">
-            <!-- Remove the onclick that reopens the search modal -->
+        <header class="w3-container" style="position:relative;">
             <span onclick="document.getElementById('resultModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
             <h2 style="text-transform:uppercase;">Search Result</h2>
         </header>
