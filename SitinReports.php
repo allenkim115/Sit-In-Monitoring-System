@@ -30,11 +30,6 @@ $purpose_filter = isset($_GET['purpose']) ? $_GET['purpose'] : '';
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
 
-// Pagination variables
-$records_per_page = isset($_GET['entries']) ? (int)$_GET['entries'] : 10;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$offset = ($page - 1) * $records_per_page;
-
 // Base SQL query
 $sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
                FROM sitin_records sr
@@ -57,9 +52,15 @@ if (!empty($date_to)) {
 
 $sql_sitins .= " ORDER BY sr.TIME_IN DESC";
 
-// Get total records count for pagination
-$count_sql = str_replace("sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT", "COUNT(*) as count", $sql_sitins);
-$stmt_count = $conn->prepare($count_sql);
+// For debugging
+error_log("SQL Query: " . $sql_sitins);
+error_log("Laboratory Filter: " . $laboratory_filter);
+error_log("Purpose Filter: " . $purpose_filter);
+error_log("Date From: " . $date_from);
+error_log("Date To: " . $date_to);
+
+// Prepare and execute the query
+$stmt_sitins = $conn->prepare($sql_sitins);
 
 // Bind parameters if filters are set
 $types = '';
@@ -82,24 +83,9 @@ if (!empty($date_to)) {
     $params[] = $date_to;
 }
 
-if (!empty($params)) {
-    $stmt_count->bind_param($types, ...$params);
-}
-
-$stmt_count->execute();
-$total_records = $stmt_count->get_result()->fetch_assoc()['count'];
-$total_pages = ceil($total_records / $records_per_page);
-
-// Add LIMIT and OFFSET to main query
-$sql_sitins .= " LIMIT ? OFFSET ?";
-
-// Prepare and execute the main query
-$stmt_sitins = $conn->prepare($sql_sitins);
-
-// Add LIMIT and OFFSET parameters
-$types .= 'ii';
-$params[] = $records_per_page;
-$params[] = $offset;
+// For debugging
+error_log("Parameter Types: " . $types);
+error_log("Parameters: " . print_r($params, true));
 
 if (!empty($params)) {
     $stmt_sitins->bind_param($types, ...$params);
@@ -156,52 +142,17 @@ if (isset($_GET['export'])) {
     }
     $filename .= "_" . date('Y-m-d') . "." . $export_type;
     
-    // Get filtered data using query WITHOUT pagination limits
-    $sql_export = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
-                   FROM sitin_records sr
-                   JOIN user u ON sr.IDNO = u.IDNO
-                   WHERE 1=1";
-    
-    // Apply filters
-    if (!empty($laboratory_filter)) {
-        $sql_export .= " AND sr.LABORATORY = ?";
-    }
-    if (!empty($purpose_filter)) {
-        $sql_export .= " AND sr.PURPOSE = ?";
-    }
-    if (!empty($date_from)) {
-        $sql_export .= " AND DATE(sr.TIME_IN) >= ?";
-    }
-    if (!empty($date_to)) {
-        $sql_export .= " AND DATE(sr.TIME_IN) <= ?";
-    }
-    
-    $sql_export .= " ORDER BY sr.TIME_IN DESC";
-    
+    // Get filtered data using the same query as the display
+    $sql_export = $sql_sitins;
     $stmt_export = $conn->prepare($sql_export);
     
-    // Reset types and params for export
-    $types = '';
-    $params = [];
-    
-    if (!empty($laboratory_filter)) {
-        $types .= 's';
-        $params[] = $laboratory_filter;
-    }
-    if (!empty($purpose_filter)) {
-        $types .= 's';
-        $params[] = $purpose_filter;
-    }
-    if (!empty($date_from)) {
-        $types .= 's';
-        $params[] = $date_from;
-    }
-    if (!empty($date_to)) {
-        $types .= 's';
-        $params[] = $date_to;
-    }
-    
+    // Bind parameters if filters are set
     if (!empty($params)) {
+        // For debugging - log the query and parameters
+        error_log("Export SQL Query: " . $sql_export);
+        error_log("Export Parameters: " . print_r($params, true));
+        error_log("Export Types: " . $types);
+        
         $stmt_export->bind_param($types, ...$params);
     }
     
@@ -211,6 +162,9 @@ if (isset($_GET['export'])) {
     while ($row = $result_export->fetch_assoc()) {
         $export_records[] = $row;
     }
+    
+    // For debugging - log the number of records
+    error_log("Number of records to export: " . count($export_records));
     
     $stmt_export->close();
     
@@ -335,10 +289,20 @@ if (isset($_GET['export'])) {
         // Set font for title
         $pdf->SetFont('helvetica', 'B', 16);
         
+        // Add logo
+        $logoPath = 'images/ucheader.jpg'; // Replace with the actual path to your logo in JPEG format
+        $pdf->Image($logoPath, 15, 10, 30); // Adjust position (x, y) and size (width)
+
         // Add title
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 10, 'University of Cebu', 0, 1, 'C');
+        $pdf->Cell(0, 10, 'College of Computer Studies', 0, 1, 'C');
         $pdf->Cell(0, 10, 'Sit-in Reports', 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(0, 5, 'Generated on ' . date('Y-m-d'), 0, 1, 'C');
+
+        $logoPath = 'images/OIP.jpg'; // Replace with the actual path to your logo in JPEG format
+        $pdf->Image($logoPath, 260, 10, 30); // Adjust position (x, y) and size (width) to place it on the right side
         
         // Add filter information
         $pdf->Ln(5);
@@ -411,81 +375,6 @@ include 'search_modal.php';
     <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
     <title>Sit-in Reports</title>
     <style>
-        @media print {
-            @page {
-                size: landscape;
-                margin: 1.5cm;
-            }
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            .w3-sidebar, .export-buttons, .filter-container, .w3-row.w3-margin-bottom, .title_page, .w3-center.w3-padding, .regular-table {
-                display: none !important;
-            }
-            .w3-container {
-                margin: 0 auto !important;
-                padding: 0 !important;
-                width: 100% !important;
-            }
-            .print-content {
-                display: block !important;
-                width: 100%;
-                margin: 0 auto;
-            }
-            .sitin-table {
-                width: 100% !important;
-                margin: 20px auto 0 auto !important;
-                page-break-inside: auto;
-                border-collapse: collapse;
-                border: 1px solid #000;
-            }
-            .sitin-table th {
-                background-color: #f0fff0 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                padding: 10px;
-                border: 1px solid #000;
-                font-weight: normal;
-            }
-            .sitin-table td {
-                padding: 8px;
-                border: 1px solid #000;
-            }
-            .sitin-table tr {
-                page-break-inside: avoid;
-            }
-            .print-header {
-                display: block !important;
-                text-align: center;
-                margin-bottom: 15px;
-            }
-            .print-header h1 {
-                font-size: 14pt;
-                margin: 0 0 5px 0;
-                font-weight: normal;
-            }
-            .print-header p {
-                font-size: 10pt;
-                margin: 3px 0;
-            }
-            .print-filters {
-                margin: 5px auto;
-                font-size: 10pt;
-                text-align: center;
-            }
-            .print-filters p {
-                margin: 2px 0;
-            }
-            /* Hide browser's default header and footer */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-        }
-        .print-header, .print-content {
-            display: none;
-        }
         .sitin-table {
             width: 100%;
             border-collapse: collapse;
@@ -561,61 +450,6 @@ include 'search_modal.php';
                 <a href="?<?php echo $filter_query; ?>" class="w3-button w3-green w3-round-large">CSV</a>
                 <a href="?<?php echo $excel_query; ?>" class="w3-button w3-blue w3-round-large">Excel</a>
                 <a href="?<?php echo $pdf_query; ?>" class="w3-button w3-red w3-round-large">PDF</a>
-                <button onclick="window.print()" class="w3-button w3-orange w3-round-large"><i class="fa-solid fa-print"></i> Print</button>
-            </div>
-
-            <!-- Print-only content -->
-            <div class="print-content">
-                <div class="print-header">
-                    <h1>Sit-in Reports</h1>
-                    <p>Generated on <?php echo date('Y-m-d'); ?></p>
-                    <?php if (!empty($laboratory_filter)): ?>
-                        <p>Laboratory: <?php echo htmlspecialchars($laboratory_filter); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($purpose_filter)): ?>
-                        <p>Purpose: <?php echo htmlspecialchars($purpose_filter); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($date_from)): ?>
-                        <p>Date From: <?php echo htmlspecialchars($date_from); ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($date_to)): ?>
-                        <p>Date To: <?php echo htmlspecialchars($date_to); ?></p>
-                    <?php endif; ?>
-                </div>
-                <table class="sitin-table">
-                    <thead>
-                        <tr>
-                            <th>Sit-in No.</th>
-                            <th>IDNO</th>
-                            <th>Name</th>
-                            <th>Purpose</th>
-                            <th>Laboratory</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($sitin_records) > 0): ?>
-                            <?php foreach ($sitin_records as $record): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($record['ID']); ?></td>
-                                    <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
-                                    <td><?php echo htmlspecialchars($record['Name']); ?></td>
-                                    <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
-                                    <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
-                                    <td><?php echo date("g:i a", strtotime($record['TIME_IN'])); ?></td>
-                                    <td><?php echo $record['TIME_OUT'] ? date("g:i a", strtotime($record['TIME_OUT'])) : 'Still Sitting-in'; ?></td>
-                                    <td><?php echo date("Y-m-d", strtotime($record['TIME_IN'])); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="8">No sit-in records found.</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
             </div>
 
             <!-- Filters -->
@@ -656,21 +490,8 @@ include 'search_modal.php';
                 </div>
             </form>
 
-            <!-- Entries per page selector -->
-            <div class="w3-row w3-margin-bottom">
-                <div class="w3-col m6">
-                    <select class="w3-select w3-border" style="width: 100px;" onchange="changeEntries(this.value)">
-                        <option value="10" <?php echo $records_per_page == 10 ? 'selected' : ''; ?>>10</option>
-                        <option value="25" <?php echo $records_per_page == 25 ? 'selected' : ''; ?>>25</option>
-                        <option value="50" <?php echo $records_per_page == 50 ? 'selected' : ''; ?>>50</option>
-                        <option value="100" <?php echo $records_per_page == 100 ? 'selected' : ''; ?>>100</option>
-                    </select>
-                    <span>entries per page</span>
-                </div>
-            </div>
-
-            <!-- Regular view table (will be hidden during print) -->
-            <table class="sitin-table regular-table">
+            <!-- Records Table -->
+            <table class="sitin-table">
                 <thead>
                     <tr>
                         <th>Sit-in No.</th>
@@ -704,35 +525,6 @@ include 'search_modal.php';
                     <?php endif; ?>
                 </tbody>
             </table>
-
-            <!-- Pagination -->
-            <div class="w3-center w3-padding">
-                <?php if ($total_pages > 1): ?>
-                    <div class="w3-bar">
-                        <?php if ($page > 1): ?>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => 1])); ?>" class="w3-button">&laquo;</a>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="w3-button">&lsaquo;</a>
-                        <?php endif; ?>
-                        
-                        <?php
-                        $start_page = max(1, $page - 2);
-                        $end_page = min($total_pages, $page + 2);
-                        
-                        for ($i = $start_page; $i <= $end_page; $i++):
-                        ?>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>" 
-                               class="w3-button <?php echo $i == $page ? 'w3-purple' : ''; ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endfor; ?>
-                        
-                        <?php if ($page < $total_pages): ?>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="w3-button">&rsaquo;</a>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $total_pages])); ?>" class="w3-button">&raquo;</a>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
         </div>
     </div>
 
@@ -743,13 +535,6 @@ include 'search_modal.php';
 
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
-        }
-
-        function changeEntries(value) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('entries', value);
-            url.searchParams.set('page', '1'); // Reset to first page when changing entries
-            window.location.href = url.toString();
         }
     </script>
 </body>
