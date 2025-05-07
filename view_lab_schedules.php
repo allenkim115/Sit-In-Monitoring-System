@@ -134,7 +134,7 @@ function status_cell($day, $slot, $schedule) {
             <form method="get" style="margin-bottom:20px;">
                 <?php foreach ($lab_rooms as $room): ?>
                     <button type="submit" name="lab" value="<?php echo $room; ?>" class="room-btn<?php if ($selected_lab == $room) echo ' selected'; ?>">
-                        <i class="fa-solid fa-door-closed"></i><?php echo $room; ?>
+                        <?php echo $room; ?>
                     </button>
                 <?php endforeach; ?>
             </form>
