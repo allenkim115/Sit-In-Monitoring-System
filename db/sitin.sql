@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2025 at 09:01 PM
+-- Generation Time: May 07, 2025 at 08:34 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -351,6 +351,290 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pc_status`
+--
+
+CREATE TABLE `pc_status` (
+  `id` int(11) NOT NULL,
+  `pc_number` varchar(10) NOT NULL,
+  `room_number` varchar(20) NOT NULL,
+  `status` enum('available','used','maintenance') DEFAULT 'available',
+  `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pc_status`
+--
+
+INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updated`) VALUES
+(1, 'PC1', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(2, 'PC2', 'Room 524', 'used', '2025-05-07 18:34:32'),
+(3, 'PC3', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(4, 'PC4', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(5, 'PC5', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(6, 'PC6', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(7, 'PC7', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(8, 'PC8', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(9, 'PC9', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(10, 'PC10', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(11, 'PC11', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(12, 'PC12', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(13, 'PC13', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(14, 'PC14', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(15, 'PC15', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(16, 'PC16', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(17, 'PC17', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(18, 'PC18', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(19, 'PC19', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(20, 'PC20', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(21, 'PC21', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(22, 'PC22', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(23, 'PC23', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(24, 'PC24', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(25, 'PC25', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(26, 'PC26', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(27, 'PC27', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(28, 'PC28', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(29, 'PC29', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(30, 'PC30', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(31, 'PC31', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(32, 'PC32', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(33, 'PC33', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(34, 'PC34', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(35, 'PC35', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(36, 'PC36', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(37, 'PC37', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(38, 'PC38', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(39, 'PC39', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(40, 'PC40', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(41, 'PC1', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(42, 'PC2', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(43, 'PC3', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(44, 'PC4', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(45, 'PC5', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(46, 'PC6', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(47, 'PC7', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(48, 'PC8', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(49, 'PC9', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(50, 'PC10', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(51, 'PC11', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(52, 'PC12', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(53, 'PC13', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(54, 'PC14', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(55, 'PC15', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(56, 'PC16', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(57, 'PC17', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(58, 'PC18', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(59, 'PC19', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(60, 'PC20', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(61, 'PC21', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(62, 'PC22', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(63, 'PC23', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(64, 'PC24', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(65, 'PC25', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(66, 'PC26', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(67, 'PC27', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(68, 'PC28', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(69, 'PC29', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(70, 'PC30', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(71, 'PC31', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(72, 'PC32', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(73, 'PC33', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(74, 'PC34', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(75, 'PC35', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(76, 'PC36', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(77, 'PC37', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(78, 'PC38', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(79, 'PC39', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(80, 'PC40', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(81, 'PC1', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(82, 'PC2', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(83, 'PC3', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(84, 'PC4', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(85, 'PC5', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(86, 'PC6', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(87, 'PC7', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(88, 'PC8', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(89, 'PC9', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(90, 'PC10', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(91, 'PC11', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(92, 'PC12', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(93, 'PC13', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(94, 'PC14', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(95, 'PC15', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(96, 'PC16', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(97, 'PC17', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(98, 'PC18', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(99, 'PC19', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(100, 'PC20', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(101, 'PC21', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(102, 'PC22', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(103, 'PC23', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(104, 'PC24', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(105, 'PC25', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(106, 'PC26', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(107, 'PC27', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(108, 'PC28', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(109, 'PC29', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(110, 'PC30', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(111, 'PC31', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(112, 'PC32', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(113, 'PC33', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(114, 'PC34', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(115, 'PC35', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(116, 'PC36', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(117, 'PC37', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(118, 'PC38', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(119, 'PC39', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(120, 'PC40', 'Room 528', 'available', '2025-05-07 17:19:26'),
+(121, 'PC1', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(122, 'PC2', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(123, 'PC3', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(124, 'PC4', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(125, 'PC5', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(126, 'PC6', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(127, 'PC7', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(128, 'PC8', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(129, 'PC9', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(130, 'PC10', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(131, 'PC11', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(132, 'PC12', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(133, 'PC13', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(134, 'PC14', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(135, 'PC15', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(136, 'PC16', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(137, 'PC17', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(138, 'PC18', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(139, 'PC19', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(140, 'PC20', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(141, 'PC21', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(142, 'PC22', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(143, 'PC23', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(144, 'PC24', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(145, 'PC25', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(146, 'PC26', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(147, 'PC27', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(148, 'PC28', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(149, 'PC29', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(150, 'PC30', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(151, 'PC31', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(152, 'PC32', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(153, 'PC33', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(154, 'PC34', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(155, 'PC35', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(156, 'PC36', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(157, 'PC37', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(158, 'PC38', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(159, 'PC39', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(160, 'PC40', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(161, 'PC1', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(162, 'PC2', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(163, 'PC3', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(164, 'PC4', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(165, 'PC5', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(166, 'PC6', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(167, 'PC7', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(168, 'PC8', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(169, 'PC9', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(170, 'PC10', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(171, 'PC11', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(172, 'PC12', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(173, 'PC13', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(174, 'PC14', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(175, 'PC15', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(176, 'PC16', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(177, 'PC17', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(178, 'PC18', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(179, 'PC19', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(180, 'PC20', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(181, 'PC21', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(182, 'PC22', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(183, 'PC23', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(184, 'PC24', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(185, 'PC25', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(186, 'PC26', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(187, 'PC27', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(188, 'PC28', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(189, 'PC29', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(190, 'PC30', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(191, 'PC31', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(192, 'PC32', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(193, 'PC33', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(194, 'PC34', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(195, 'PC35', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(196, 'PC36', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(197, 'PC37', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(198, 'PC38', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(199, 'PC39', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(200, 'PC40', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(201, 'PC1', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(202, 'PC2', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(203, 'PC3', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(204, 'PC4', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(205, 'PC5', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(206, 'PC6', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(207, 'PC7', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(208, 'PC8', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(209, 'PC9', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(210, 'PC10', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(211, 'PC11', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(212, 'PC12', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(213, 'PC13', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(214, 'PC14', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(215, 'PC15', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(216, 'PC16', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(217, 'PC17', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(218, 'PC18', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(219, 'PC19', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(220, 'PC20', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(221, 'PC21', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(222, 'PC22', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(223, 'PC23', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(224, 'PC24', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(225, 'PC25', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(226, 'PC26', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(227, 'PC27', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(228, 'PC28', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(229, 'PC29', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(230, 'PC30', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(231, 'PC31', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(232, 'PC32', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(233, 'PC33', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(234, 'PC34', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(235, 'PC35', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(236, 'PC36', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(237, 'PC37', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(238, 'PC38', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(239, 'PC39', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(240, 'PC40', 'Room 544', 'available', '2025-05-07 17:19:17');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `reservation_requests`
+--
+
+CREATE TABLE `reservation_requests` (
+  `id` int(11) NOT NULL,
+  `student_id` varchar(20) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `room` varchar(20) NOT NULL,
+  `seat` varchar(20) NOT NULL,
+  `datetime` datetime NOT NULL,
+  `purpose` varchar(255) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `reservation_requests`
+--
+
+INSERT INTO `reservation_requests` (`id`, `student_id`, `name`, `room`, `seat`, `datetime`, `purpose`, `status`) VALUES
+(1, '20951505', 'Allen Kim Rafaela', 'Room 524', 'PC1', '2025-05-13 11:30:00', 'PHP Programming', 'pending');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sitin_records`
 --
 
@@ -402,7 +686,10 @@ INSERT INTO `sitin_records` (`ID`, `IDNO`, `PURPOSE`, `LABORATORY`, `TIME_IN`, `
 (51, 3000, 'Python Programming', '524', '2025-05-06 00:18:42', '2025-05-06 00:18:46'),
 (52, 3000, 'C++ Programming', '524', '2025-05-06 00:19:43', '2025-05-06 00:19:47'),
 (53, 20951505, 'PHP Programming', '524', '2025-05-06 00:22:19', '2025-05-06 00:22:23'),
-(54, 3123052, 'Java Programming', '530', '2025-05-06 01:51:38', '2025-05-06 01:51:43');
+(54, 3123052, 'Java Programming', '530', '2025-05-06 01:51:38', '2025-05-06 01:51:43'),
+(55, 2233311, 'PHP Programming', '526', '2025-05-06 03:06:02', '2025-05-06 03:06:08'),
+(56, 3123052, 'Python Programming', '526', '2025-05-06 03:06:37', '2025-05-06 03:06:52'),
+(57, 2000, 'PHP Programming', '524', '2025-05-06 03:06:47', '2025-05-06 03:06:50');
 
 -- --------------------------------------------------------
 
@@ -430,10 +717,10 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`ID`, `IDNO`, `LASTNAME`, `FIRSTNAME`, `MIDDLENAME`, `COURSE`, `YEAR_LEVEL`, `USERNAME`, `PASSWORD`, `PROFILE_PIC`, `SESSION_COUNT`, `POINTS`) VALUES
-(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 27, 1),
+(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 26, 2),
 (4, 3000, 'Doe', 'Jake', '', 'BSIT', 1, 'jake123', '$2y$10$.kySdo9lb7URfqAf8VZTSOyVEOfNT9aUQFZsyfHxX5T2tOIEyg0CC', 'images/default_pic.png', 25, 3),
-(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 30, 0),
-(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 29, 1),
+(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 29, 1),
+(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 28, 2),
 (6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$x2hKXgI3yAtjgwumnUCSj.B5XA5sZcuhqz6y28xNiH5PE/fXKu9AO', 'images/default_pic.png', 30, 0),
 (1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 25, 11),
 (7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$o5zg6.8vtr5Hq.33dMUZMuZYsIFWoHFK.F4RQyM6TxytW1XaUIl2.', 'images/default_pic.png', 30, 0);
@@ -471,6 +758,18 @@ ALTER TABLE `lab_resources`
 -- Indexes for table `lab_schedule`
 --
 ALTER TABLE `lab_schedule`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `pc_status`
+--
+ALTER TABLE `pc_status`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `reservation_requests`
+--
+ALTER TABLE `reservation_requests`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -522,10 +821,22 @@ ALTER TABLE `lab_schedule`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
 
 --
+-- AUTO_INCREMENT for table `pc_status`
+--
+ALTER TABLE `pc_status`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=241;
+
+--
+-- AUTO_INCREMENT for table `reservation_requests`
+--
+ALTER TABLE `reservation_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `sitin_records`
 --
 ALTER TABLE `sitin_records`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `user`
