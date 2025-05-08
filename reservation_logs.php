@@ -2,7 +2,13 @@
 require_once 'connect.php';
 session_start();
 
-// Profile picture logic (copied from admin.php)
+// Check if user is logged in
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.php');
+    exit;
+}
+
+// Profile picture logic
 $profile_pic = 'images/default_pic.png';
 if (isset($_SESSION['user']['USERNAME'])) {
     $username = $_SESSION['user']['USERNAME'];
@@ -22,17 +28,31 @@ $date_filter = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
 
 // Build query
-$sql = "SELECT id, student_id, name, room, seat, datetime, purpose, status FROM reservation_requests WHERE DATE(datetime) = ?";
-$params = [$date_filter];
-$types = 's';
+$sql = "SELECT r.id, r.idno, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) as full_name, r.room_number, r.pc_number, r.reservation_date, r.time_slot, r.purpose, r.status 
+        FROM reservations r 
+        LEFT JOIN user u ON r.idno = u.IDNO";
+
+$params = [];
+$types = '';
+
+if ($date_filter) {
+    $sql .= " WHERE r.reservation_date = ?";
+    $params[] = $date_filter;
+    $types .= 's';
+}
+
 if ($status_filter && in_array($status_filter, ['pending','approved','rejected'])) {
-    $sql .= " AND status = ?";
+    $sql .= ($date_filter ? " AND" : " WHERE") . " r.status = ?";
     $params[] = $status_filter;
     $types .= 's';
 }
-$sql .= " ORDER BY datetime DESC";
+
+$sql .= " ORDER BY r.reservation_date DESC, r.time_slot DESC";
+
 $stmt = $conn->prepare($sql);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $logs = [];
@@ -47,7 +67,7 @@ while ($row = $result->fetch_assoc()) {
     <title>Reservation Logs</title>
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="side_nav.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://kit.fontawesome.com/bf35ff1032.js" crossorigin="anonymous"></script>
     <style>
         body { background: #f4f6fb; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; }
         .container { max-width: 1100px; margin: 40px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); padding: 32px 36px 24px 36px; }
@@ -84,7 +104,7 @@ while ($row = $result->fetch_assoc()) {
             <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px; border-radius: 50%; border: 2px solid rgba(100,25,117,1);">
         </div>
         <a href="admin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-house w3-padding"></i><span>Home</span></a>
-        <a href="#" onclick="document.getElementById('searchModal') ? document.getElementById('searchModal').style.display='block' : null" class="w3-bar-item w3-button"><i class="fa-solid fa-magnifying-glass w3-padding"></i><span>Search</span></a>
+        <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i><span>Profile</span></a>
         <a href="list.php" class="w3-bar-item w3-button"><i class="fa-solid fa-user w3-padding"></i><span>Students</span></a>
         <a href="currentSitin.php" class="w3-bar-item w3-button"><i class="fa-solid fa-computer w3-padding"></i><span>Sit-in</span></a>
         <a href="SitinReports.php" class="w3-bar-item w3-button"><i class="fa-solid fa-chart-bar w3-padding"></i><span>Sit-in Reports</span></a>
@@ -133,12 +153,12 @@ while ($row = $result->fetch_assoc()) {
                     <?php else: ?>
                         <?php foreach ($logs as $log): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($log['student_id']); ?></td>
-                                <td><?php echo htmlspecialchars($log['name']); ?></td>
-                                <td><?php echo htmlspecialchars($log['room']); ?></td>
-                                <td><?php echo htmlspecialchars($log['seat']); ?></td>
-                                <td><?php echo date('m/d/Y', strtotime($log['datetime'])); ?></td>
-                                <td><?php echo date('h:i A', strtotime($log['datetime'])); ?></td>
+                                <td><?php echo htmlspecialchars($log['idno']); ?></td>
+                                <td><?php echo htmlspecialchars($log['full_name']); ?></td>
+                                <td><?php echo htmlspecialchars($log['room_number']); ?></td>
+                                <td><?php echo htmlspecialchars($log['pc_number']); ?></td>
+                                <td><?php echo date('m/d/Y', strtotime($log['reservation_date'])); ?></td>
+                                <td><?php echo htmlspecialchars($log['time_slot']); ?></td>
                                 <td><?php echo htmlspecialchars($log['purpose']); ?></td>
                                 <td><span class="status-pill <?php echo htmlspecialchars($log['status']); ?>"><?php echo ucfirst($log['status']); ?></span></td>
                             </tr>

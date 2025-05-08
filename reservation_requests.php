@@ -2,6 +2,56 @@
 require_once 'connect.php';
 session_start();
 
+// Handle approve/reject actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
+        $reservation_id = $_POST['reservation_id'];
+        $action = $_POST['action'];
+        
+        if ($action === 'approve' || $action === 'reject') {
+            $status = ($action === 'approve') ? 'approved' : 'rejected';
+            
+            // Start transaction
+            $conn->begin_transaction();
+            
+            try {
+                // Update reservation status
+                $sql = "UPDATE reservations SET status = ? WHERE id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("si", $status, $reservation_id);
+                $stmt->execute();
+                
+                // If approved, update PC status to 'used'
+                if ($action === 'approve') {
+                    // Get the PC and room information from the reservation
+                    $sql_get_info = "SELECT room_number, pc_number FROM reservations WHERE id = ?";
+                    $stmt_info = $conn->prepare($sql_get_info);
+                    $stmt_info->bind_param("i", $reservation_id);
+                    $stmt_info->execute();
+                    $result_info = $stmt_info->get_result();
+                    $res_info = $result_info->fetch_assoc();
+                    
+                    if ($res_info) {
+                        // Update PC status to 'used'
+                        $sql_update_pc = "UPDATE pc_status SET status = 'used' WHERE room_number = ? AND pc_number = ?";
+                        $stmt_pc = $conn->prepare($sql_update_pc);
+                        $stmt_pc->bind_param("ss", $res_info['room_number'], $res_info['pc_number']);
+                        $stmt_pc->execute();
+                    }
+                }
+                
+                // Commit transaction
+                $conn->commit();
+                $success_message = "Reservation " . ($action === 'approve' ? 'approved' : 'rejected') . " successfully!";
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $conn->rollback();
+                $error_message = "Error updating reservation status: " . $e->getMessage();
+            }
+        }
+    }
+}
+
 // Profile picture logic (copied from admin.php)
 $profile_pic = 'images/default_pic.png';
 if (isset($_SESSION['user']['USERNAME'])) {
@@ -18,7 +68,11 @@ if (isset($_SESSION['user']['USERNAME'])) {
 }
 
 // Fetch reservation requests (example query, adjust table/fields as needed)
-$query = "SELECT student_id, name, room, seat, datetime, purpose FROM reservation_requests WHERE status = 'pending' ORDER BY datetime ASC";
+$query = "SELECT r.id, r.idno as student_id, CONCAT(u.FIRSTNAME, ' ', u.MIDDLENAME, ' ', u.LASTNAME) as name, r.room_number as room, r.pc_number as seat, CONCAT(r.reservation_date, ' ', SUBSTRING_INDEX(r.time_slot, '-', 1)) as datetime, r.purpose, r.status 
+          FROM reservations r 
+          JOIN user u ON r.idno = u.IDNO 
+          WHERE r.status = 'pending' 
+          ORDER BY r.reservation_date ASC, r.time_slot ASC";
 $result = mysqli_query($conn, $query);
 
 $reservations = [];
@@ -179,8 +233,11 @@ while ($row = mysqli_fetch_assoc($result)) {
                                 <td><?= date('M d, Y, h:i A', strtotime($res['datetime'])) ?></td>
                                 <td><?= htmlspecialchars($res['purpose']) ?></td>
                                 <td class="actions">
-                                    <button class="btn btn-approve"><i class="fa fa-check"></i>Approve</button>
-                                    <button class="btn btn-reject"><i class="fa fa-times"></i>Reject</button>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="reservation_id" value="<?= $res['id'] ?>">
+                                        <button type="submit" name="action" value="approve" class="btn btn-approve"><i class="fa fa-check"></i>Approve</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-reject"><i class="fa fa-times"></i>Reject</button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

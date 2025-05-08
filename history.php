@@ -113,23 +113,13 @@ $result = $conn->query($sql);
             <img src="<?php echo htmlspecialchars($profile_pic); ?>" alt="profile_pic" style="width: 90px; height:90px; border-radius: 50%; border: 2px solid rgba(100,25,117,1);">
         </div>
         <a href="dashboard.php" class="w3-bar-item w3-button"><i class="fa-solid fa-house w3-padding"></i>Home</a>
-        <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button">
-            <i class="fa-regular fa-user w3-padding"></i>Profile
-        </a>
-        <a href="profile.php" class="w3-bar-item w3-button">
-            <i class="fa-solid fa-edit w3-padding"></i>Edit Profile
-        </a>
-        <a href="history.php" class="w3-bar-item w3-button active">
-            <i class="fa-solid fa-clock-rotate-left w3-padding"></i>History
-        </a>
+        <a href="#" onclick="document.getElementById('profile').style.display='block'" class="w3-bar-item w3-button"><i class="fa-regular fa-user w3-padding"></i>Profile</a>
+        <a href="profile.php" class="w3-bar-item w3-button"><i class="fa-solid fa-edit w3-padding"></i>Edit Profile</a>
+        <a href="history.php" class="w3-bar-item w3-button active"><i class="fa-solid fa-clock-rotate-left w3-padding"></i>History</a>
         <a href="view_lab_schedules.php" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar w3-padding"></i><span>Lab Schedules</span></a>
         <a href="view_lab_resources.php" class="w3-bar-item w3-button"><i class="fa-solid fa-book w3-padding"></i><span>Lab Resources</span></a>
-        <a href="#" class="w3-bar-item w3-button">
-            <i class="fa-solid fa-calendar-days w3-padding"></i>Reservation
-        </a>
-        <a href="logout.php" class="w3-bar-item w3-button">
-            <i class="fa-solid fa-right-to-bracket w3-padding"></i>Log Out
-        </a>
+        <a href="make_reservation.php" class="w3-bar-item w3-button"><i class="fa-solid fa-calendar-days w3-padding"></i><span>Reservation</span></a>
+        <a href="logout.php" class="w3-bar-item w3-button"><i class="fa-solid fa-right-to-bracket w3-padding"></i>Log Out</a>
     </div>
 
     <!-- Profile Modal -->
