@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 07, 2025 at 08:34 PM
+-- Generation Time: May 08, 2025 at 10:05 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -132,7 +132,7 @@ CREATE TABLE `lab_schedule` (
 
 INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `status`) VALUES
 (1, '524', 'Monday/Wednesday', '7:30AM-9:00AM', 'Occupied'),
-(2, '524', 'Monday/Wednesday', '9:00AM-10:30AM', 'Available'),
+(2, '524', 'Monday/Wednesday', '9:00AM-10:30AM', 'Occupied'),
 (3, '524', 'Monday/Wednesday', '10:30AM-12:00PM', 'Available'),
 (4, '524', 'Monday/Wednesday', '12:00PM-1:00PM', 'Available'),
 (5, '524', 'Monday/Wednesday', '1:00PM-3:00PM', 'Available'),
@@ -368,7 +368,7 @@ CREATE TABLE `pc_status` (
 
 INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updated`) VALUES
 (1, 'PC1', 'Room 524', 'available', '2025-05-07 17:19:33'),
-(2, 'PC2', 'Room 524', 'used', '2025-05-07 18:34:32'),
+(2, 'PC2', 'Room 524', 'maintenance', '2025-05-08 04:39:44'),
 (3, 'PC3', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (4, 'PC4', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (5, 'PC5', 'Room 524', 'available', '2025-05-07 17:19:33'),
@@ -382,7 +382,7 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (13, 'PC13', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (14, 'PC14', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (15, 'PC15', 'Room 524', 'available', '2025-05-07 17:19:33'),
-(16, 'PC16', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(16, 'PC16', 'Room 524', 'maintenance', '2025-05-08 07:54:48'),
 (17, 'PC17', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (18, 'PC18', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (19, 'PC19', 'Room 524', 'available', '2025-05-07 17:19:33'),
@@ -391,7 +391,7 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (22, 'PC22', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (23, 'PC23', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (24, 'PC24', 'Room 524', 'available', '2025-05-07 17:19:33'),
-(25, 'PC25', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(25, 'PC25', 'Room 524', 'maintenance', '2025-05-08 07:54:52'),
 (26, 'PC26', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (27, 'PC27', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (28, 'PC28', 'Room 524', 'available', '2025-05-07 17:19:33'),
@@ -421,8 +421,8 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (52, 'PC12', 'Room 526', 'available', '2025-05-07 17:15:39'),
 (53, 'PC13', 'Room 526', 'available', '2025-05-07 17:15:39'),
 (54, 'PC14', 'Room 526', 'available', '2025-05-07 17:15:39'),
-(55, 'PC15', 'Room 526', 'available', '2025-05-07 17:15:39'),
-(56, 'PC16', 'Room 526', 'available', '2025-05-07 17:15:39'),
+(55, 'PC15', 'Room 526', 'used', '2025-05-08 07:55:02'),
+(56, 'PC16', 'Room 526', 'used', '2025-05-08 07:55:02'),
 (57, 'PC17', 'Room 526', 'available', '2025-05-07 17:15:39'),
 (58, 'PC18', 'Room 526', 'available', '2025-05-07 17:15:39'),
 (59, 'PC19', 'Room 526', 'available', '2025-05-07 17:15:39'),
@@ -483,15 +483,15 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (114, 'PC34', 'Room 528', 'available', '2025-05-07 17:19:26'),
 (115, 'PC35', 'Room 528', 'available', '2025-05-07 17:19:26'),
 (116, 'PC36', 'Room 528', 'available', '2025-05-07 17:19:26'),
-(117, 'PC37', 'Room 528', 'available', '2025-05-07 17:19:26'),
-(118, 'PC38', 'Room 528', 'available', '2025-05-07 17:19:26'),
-(119, 'PC39', 'Room 528', 'available', '2025-05-07 17:19:26'),
-(120, 'PC40', 'Room 528', 'available', '2025-05-07 17:19:26'),
-(121, 'PC1', 'Room 530', 'available', '2025-05-07 17:19:23'),
-(122, 'PC2', 'Room 530', 'available', '2025-05-07 17:19:23'),
-(123, 'PC3', 'Room 530', 'available', '2025-05-07 17:19:23'),
-(124, 'PC4', 'Room 530', 'available', '2025-05-07 17:19:23'),
-(125, 'PC5', 'Room 530', 'available', '2025-05-07 17:19:23'),
+(117, 'PC37', 'Room 528', 'maintenance', '2025-05-08 07:55:12'),
+(118, 'PC38', 'Room 528', 'maintenance', '2025-05-08 07:55:12'),
+(119, 'PC39', 'Room 528', 'maintenance', '2025-05-08 07:55:12'),
+(120, 'PC40', 'Room 528', 'maintenance', '2025-05-08 07:55:12'),
+(121, 'PC1', 'Room 530', 'maintenance', '2025-05-08 07:55:23'),
+(122, 'PC2', 'Room 530', 'maintenance', '2025-05-08 07:55:23'),
+(123, 'PC3', 'Room 530', 'maintenance', '2025-05-08 07:55:23'),
+(124, 'PC4', 'Room 530', 'maintenance', '2025-05-08 07:55:23'),
+(125, 'PC5', 'Room 530', 'maintenance', '2025-05-08 07:55:23'),
 (126, 'PC6', 'Room 530', 'available', '2025-05-07 17:19:23'),
 (127, 'PC7', 'Room 530', 'available', '2025-05-07 17:19:23'),
 (128, 'PC8', 'Room 530', 'available', '2025-05-07 17:19:23'),
@@ -527,8 +527,8 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (158, 'PC38', 'Room 530', 'available', '2025-05-07 17:19:23'),
 (159, 'PC39', 'Room 530', 'available', '2025-05-07 17:19:23'),
 (160, 'PC40', 'Room 530', 'available', '2025-05-07 17:19:23'),
-(161, 'PC1', 'Room 542', 'available', '2025-05-07 17:15:39'),
-(162, 'PC2', 'Room 542', 'available', '2025-05-07 17:15:39'),
+(161, 'PC1', 'Room 542', 'used', '2025-05-08 07:55:33'),
+(162, 'PC2', 'Room 542', 'used', '2025-05-08 07:55:33'),
 (163, 'PC3', 'Room 542', 'available', '2025-05-07 17:15:39'),
 (164, 'PC4', 'Room 542', 'available', '2025-05-07 17:15:39'),
 (165, 'PC5', 'Room 542', 'available', '2025-05-07 17:15:39'),
@@ -567,8 +567,8 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 (198, 'PC38', 'Room 542', 'available', '2025-05-07 17:15:39'),
 (199, 'PC39', 'Room 542', 'available', '2025-05-07 17:15:39'),
 (200, 'PC40', 'Room 542', 'available', '2025-05-07 17:15:39'),
-(201, 'PC1', 'Room 544', 'available', '2025-05-07 17:19:17'),
-(202, 'PC2', 'Room 544', 'available', '2025-05-07 17:19:17'),
+(201, 'PC1', 'Room 544', 'maintenance', '2025-05-08 07:55:44'),
+(202, 'PC2', 'Room 544', 'maintenance', '2025-05-08 07:55:44'),
 (203, 'PC3', 'Room 544', 'available', '2025-05-07 17:19:17'),
 (204, 'PC4', 'Room 544', 'available', '2025-05-07 17:19:17'),
 (205, 'PC5', 'Room 544', 'available', '2025-05-07 17:19:17'),
@@ -611,26 +611,33 @@ INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updat
 -- --------------------------------------------------------
 
 --
--- Table structure for table `reservation_requests`
+-- Table structure for table `reservations`
 --
 
-CREATE TABLE `reservation_requests` (
+CREATE TABLE `reservations` (
   `id` int(11) NOT NULL,
-  `student_id` varchar(20) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `room` varchar(20) NOT NULL,
-  `seat` varchar(20) NOT NULL,
-  `datetime` datetime NOT NULL,
-  `purpose` varchar(255) DEFAULT NULL,
-  `status` enum('pending','approved','rejected') DEFAULT 'pending'
+  `idno` int(11) NOT NULL,
+  `room_number` varchar(10) NOT NULL,
+  `pc_number` varchar(10) NOT NULL,
+  `reservation_date` date NOT NULL,
+  `time_slot` varchar(20) NOT NULL,
+  `purpose` text NOT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `reservation_requests`
+-- Dumping data for table `reservations`
 --
 
-INSERT INTO `reservation_requests` (`id`, `student_id`, `name`, `room`, `seat`, `datetime`, `purpose`, `status`) VALUES
-(1, '20951505', 'Allen Kim Rafaela', 'Room 524', 'PC1', '2025-05-13 11:30:00', 'PHP Programming', 'pending');
+INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservation_date`, `time_slot`, `purpose`, `status`, `created_at`, `updated_at`) VALUES
+(10, 2000, '524', 'PC6', '2025-05-09', '10:30AM-12:00PM', 'C++ Programming', 'approved', '2025-05-08 06:13:48', '2025-05-08 06:18:26'),
+(11, 2000, '524', 'PC6', '2025-05-09', '9:00AM-10:30AM', 'C Programming', 'approved', '2025-05-08 06:18:04', '2025-05-08 06:18:28'),
+(12, 2000, '524', 'PC8', '2025-05-09', '9:00AM-10:30AM', 'Java Programming', 'approved', '2025-05-08 06:48:13', '2025-05-08 07:13:39'),
+(13, 20951505, '524', 'PC7', '2025-05-09', '9:00AM-10:30AM', 'Python Programming', 'approved', '2025-05-08 07:12:58', '2025-05-08 07:13:40'),
+(14, 2000, '524', 'PC9', '2025-05-09', '9:00AM-10:30AM', 'C++ Programming', 'rejected', '2025-05-08 07:14:04', '2025-05-08 07:14:28'),
+(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', '2025-05-08 07:22:34', '2025-05-08 07:22:58');
 
 -- --------------------------------------------------------
 
@@ -689,7 +696,15 @@ INSERT INTO `sitin_records` (`ID`, `IDNO`, `PURPOSE`, `LABORATORY`, `TIME_IN`, `
 (54, 3123052, 'Java Programming', '530', '2025-05-06 01:51:38', '2025-05-06 01:51:43'),
 (55, 2233311, 'PHP Programming', '526', '2025-05-06 03:06:02', '2025-05-06 03:06:08'),
 (56, 3123052, 'Python Programming', '526', '2025-05-06 03:06:37', '2025-05-06 03:06:52'),
-(57, 2000, 'PHP Programming', '524', '2025-05-06 03:06:47', '2025-05-06 03:06:50');
+(57, 2000, 'PHP Programming', '524', '2025-05-06 03:06:47', '2025-05-06 03:06:50'),
+(58, 2000, 'C++ Programming', '524', '2025-05-08 11:32:10', '2025-05-08 15:47:28'),
+(59, 2000, '.Net Programming', '530', '2025-05-08 15:47:44', '2025-05-08 15:47:48'),
+(60, 2000, 'C++ Programming', '544', '2025-05-08 15:48:19', '2025-05-08 15:48:23'),
+(61, 20951505, 'PHP Programming', '524', '2025-05-08 15:48:44', '2025-05-08 15:48:47'),
+(62, 3123052, 'Java Programming', '544', '2025-05-08 15:49:02', '2025-05-08 15:49:07'),
+(63, 3123052, 'Java Programming', '544', '2025-05-08 15:49:20', '2025-05-08 15:49:23'),
+(64, 2233311, 'Python Programming', '526', '2025-05-08 15:49:37', '2025-05-08 15:49:40'),
+(65, 19894948, 'PHP Programming', '524', '2025-05-08 15:51:41', '2025-05-08 15:51:46');
 
 -- --------------------------------------------------------
 
@@ -717,13 +732,14 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`ID`, `IDNO`, `LASTNAME`, `FIRSTNAME`, `MIDDLENAME`, `COURSE`, `YEAR_LEVEL`, `USERNAME`, `PASSWORD`, `PROFILE_PIC`, `SESSION_COUNT`, `POINTS`) VALUES
-(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 26, 2),
+(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 23, 5),
 (4, 3000, 'Doe', 'Jake', '', 'BSIT', 1, 'jake123', '$2y$10$.kySdo9lb7URfqAf8VZTSOyVEOfNT9aUQFZsyfHxX5T2tOIEyg0CC', 'images/default_pic.png', 25, 3),
-(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 29, 1),
-(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 28, 2),
-(6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$x2hKXgI3yAtjgwumnUCSj.B5XA5sZcuhqz6y28xNiH5PE/fXKu9AO', 'images/default_pic.png', 30, 0),
-(1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 25, 11),
-(7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$o5zg6.8vtr5Hq.33dMUZMuZYsIFWoHFK.F4RQyM6TxytW1XaUIl2.', 'images/default_pic.png', 30, 0);
+(9, 202025, 'White', 'Walter', 'Hartwell', 'BSCpE', 4, 'heisenberg', '$2y$10$QHQpJXwsI818Fe6v7z5RK.1ZaWkxKe5qYwDDqTsfQaIG1RtRwTB7S', 'uploads/681c64fb4d0e1_Omg kitty.jpg', 30, 0),
+(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 28, 2),
+(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 26, 4),
+(6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$r25EqLHKI9qcm2PaeWR.ceriLWv/rLx1.sEtjL9vTJm8xx93yNfc.', 'uploads/681c6596a1c98_pexels-photo-2719416.jpeg', 29, 1),
+(1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 24, 12),
+(7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$.J4.UBYjIliIiBcXATySMuaWICUWjnWmoquzeNkf3xt/M3ajpppCG', 'images/default_pic.png', 30, 0);
 
 --
 -- Indexes for dumped tables
@@ -767,10 +783,12 @@ ALTER TABLE `pc_status`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `reservation_requests`
+-- Indexes for table `reservations`
 --
-ALTER TABLE `reservation_requests`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE `reservations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_reservation` (`room_number`,`pc_number`,`reservation_date`,`time_slot`),
+  ADD KEY `idno` (`idno`);
 
 --
 -- Indexes for table `sitin_records`
@@ -827,22 +845,22 @@ ALTER TABLE `pc_status`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=241;
 
 --
--- AUTO_INCREMENT for table `reservation_requests`
+-- AUTO_INCREMENT for table `reservations`
 --
-ALTER TABLE `reservation_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `reservations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `sitin_records`
 --
 ALTER TABLE `sitin_records`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Constraints for dumped tables
@@ -853,6 +871,12 @@ ALTER TABLE `user`
 --
 ALTER TABLE `feedback`
   ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`SITIN_RECORD_ID`) REFERENCES `sitin_records` (`ID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `reservations`
+--
+ALTER TABLE `reservations`
+  ADD CONSTRAINT `reservations_ibfk_1` FOREIGN KEY (`idno`) REFERENCES `user` (`IDNO`);
 
 --
 -- Constraints for table `sitin_records`
