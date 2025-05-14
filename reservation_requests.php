@@ -1,6 +1,12 @@
 <?php
 require_once 'connect.php';
+require_once 'notification_functions.php';
+
 session_start();
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
+    header('Location: login.php');
+    exit;
+}
 
 // Handle approve/reject actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,6 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->begin_transaction();
             
             try {
+                // Get the PC and room information from the reservation first
+                $sql_get_info = "SELECT room_number, pc_number, idno, purpose, reservation_date, time_slot FROM reservations WHERE id = ?";
+                $stmt_info = $conn->prepare($sql_get_info);
+                $stmt_info->bind_param("i", $reservation_id);
+                $stmt_info->execute();
+                $result_info = $stmt_info->get_result();
+                $res_info = $result_info->fetch_assoc();
+                
+                if (!$res_info) {
+                    throw new Exception("Reservation not found");
+                }
+
                 // Update reservation status
                 $sql = "UPDATE reservations SET status = ? WHERE id = ?";
                 $stmt = $conn->prepare($sql);
@@ -23,26 +41,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // If approved, update PC status to 'used'
                 if ($action === 'approve') {
-                    // Get the PC and room information from the reservation
-                    $sql_get_info = "SELECT room_number, pc_number FROM reservations WHERE id = ?";
-                    $stmt_info = $conn->prepare($sql_get_info);
-                    $stmt_info->bind_param("i", $reservation_id);
-                    $stmt_info->execute();
-                    $result_info = $stmt_info->get_result();
-                    $res_info = $result_info->fetch_assoc();
-                    
-                    if ($res_info) {
-                        // Update PC status to 'used'
-                        $sql_update_pc = "UPDATE pc_status SET status = 'used' WHERE room_number = ? AND pc_number = ?";
-                        $stmt_pc = $conn->prepare($sql_update_pc);
-                        $stmt_pc->bind_param("ss", $res_info['room_number'], $res_info['pc_number']);
-                        $stmt_pc->execute();
-                    }
+                    // Update PC status to 'used'
+                    $sql_update_pc = "UPDATE pc_status SET status = 'used' WHERE room_number = ? AND pc_number = ?";
+                    $stmt_pc = $conn->prepare($sql_update_pc);
+                    $stmt_pc->bind_param("ss", $res_info['room_number'], $res_info['pc_number']);
+                    $stmt_pc->execute();
+
+                    // Create sit-in record
+                    $sql_sitin = "INSERT INTO sitin_records (IDNO, PURPOSE, LABORATORY, TIME_IN) VALUES (?, ?, ?, ?)";
+                    $stmt_sitin = $conn->prepare($sql_sitin);
+                    $laboratory = $res_info['room_number'];
+                    $time_in = $res_info['reservation_date'] . " " . explode("-", $res_info['time_slot'])[0];
+                    $stmt_sitin->bind_param("isss", $res_info['idno'], $res_info['purpose'], $laboratory, $time_in);
+                    $stmt_sitin->execute();
                 }
+                
+                // Create notification (short and correct PC label)
+                $pc_label = (stripos($res_info['pc_number'], 'PC') === 0) ? $res_info['pc_number'] : 'PC' . $res_info['pc_number'];
+                $message = "Reservation for Room {$res_info['room_number']}, {$pc_label} on {$res_info['reservation_date']} ({$res_info['time_slot']}) " . ($status === 'approved' ? 'approved.' : 'rejected.');
+                $notification_type = $status === 'approved' ? 'reservation_approved' : 'reservation_rejected';
+                createNotification($res_info['idno'], $notification_type, $message);
                 
                 // Commit transaction
                 $conn->commit();
                 $success_message = "Reservation " . ($action === 'approve' ? 'approved' : 'rejected') . " successfully!";
+                
+                // Redirect to current sit-in page if approved
+                if ($action === 'approve') {
+                    header("Location: currentSitin.php");
+                    exit();
+                }
+                
+                $_SESSION['success'] = "Reservation has been " . $status;
             } catch (Exception $e) {
                 // Rollback transaction on error
                 $conn->rollback();

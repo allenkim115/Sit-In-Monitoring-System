@@ -738,7 +738,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                 setTimeout(function() {
                     successMessage.style.display = 'none';
                 }, 500);
-            }, 000);
+            }, 5000);
         }
         
         if (errorMessage) {
@@ -747,7 +747,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                 errorMessage.style.transition = 'opacity 0.5s ease';
                 setTimeout(function() {
                     errorMessage.style.display = 'none';
-                }, 8000);
+                }, 500);
             }, 5000);
         }
     });

@@ -1,6 +1,7 @@
 <?php
 define('INCLUDED_IN_MAIN_FILE', true);
 include 'connect.php';
+include_once 'notification_functions.php';
 session_start();
 
 // Check if the user is logged in and is an admin
@@ -60,6 +61,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['timeout_id'])) {
             $stmt_fetch_points->execute();
             $result_fetch_points = $stmt_fetch_points->get_result();
             $user_points = $result_fetch_points->fetch_assoc()['POINTS'];
+
+            // Create notification for reward
+            $message = "You have earned 1 point for your sit-in session! (Total points: $user_points)";
+            createNotification($timeout_id, 'reward_received', $message);
         }
 
         // Commit the transaction

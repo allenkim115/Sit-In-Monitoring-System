@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 08, 2025 at 10:05 AM
+-- Generation Time: May 14, 2025 at 09:40 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -351,6 +351,30 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `type` enum('reservation_approved','reservation_rejected','reward_received') NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `type`, `message`, `is_read`, `created_at`) VALUES
+(1, 2000, 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 8)', 0, '2025-05-14 19:01:27'),
+(3, 2000, 'reservation_approved', 'Reservation for Room 524, PC7 on 2025-05-20 (7:30AM-9:00AM) approved.', 0, '2025-05-14 19:08:32'),
+(4, 20951505, 'reservation_rejected', 'Reservation for Room 524, PC8 on 2025-05-20 (7:30AM-9:00AM) rejected.', 1, '2025-05-14 19:11:31');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `pc_status`
 --
 
@@ -637,7 +661,16 @@ INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservati
 (12, 2000, '524', 'PC8', '2025-05-09', '9:00AM-10:30AM', 'Java Programming', 'approved', '2025-05-08 06:48:13', '2025-05-08 07:13:39'),
 (13, 20951505, '524', 'PC7', '2025-05-09', '9:00AM-10:30AM', 'Python Programming', 'approved', '2025-05-08 07:12:58', '2025-05-08 07:13:40'),
 (14, 2000, '524', 'PC9', '2025-05-09', '9:00AM-10:30AM', 'C++ Programming', 'rejected', '2025-05-08 07:14:04', '2025-05-08 07:14:28'),
-(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', '2025-05-08 07:22:34', '2025-05-08 07:22:58');
+(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', '2025-05-08 07:22:34', '2025-05-08 07:22:58'),
+(16, 20951505, '530', 'PC20', '2025-05-09', '1:00PM-3:00PM', '.Net Programming', 'rejected', '2025-05-08 08:07:31', '2025-05-14 18:20:39'),
+(17, 2000, '524', 'PC9', '2025-05-16', '7:30AM-9:00AM', 'Python Programming', 'approved', '2025-05-14 15:19:12', '2025-05-14 18:17:47'),
+(18, 2000, '526', 'PC1', '2025-05-19', '7:30AM-9:00AM', 'C++ Programming', 'approved', '2025-05-14 15:21:03', '2025-05-14 18:19:53'),
+(19, 20951505, '526', 'PC10', '2025-05-16', '10:30AM-12:00PM', 'PHP Programming', 'approved', '2025-05-14 18:21:18', '2025-05-14 18:22:06'),
+(20, 20951505, '530', 'PC10', '2025-05-19', '4:30PM-6:00PM', 'Python Programming', 'approved', '2025-05-14 18:26:00', '2025-05-14 18:26:08'),
+(21, 2000, '544', 'PC5', '2025-05-20', '12:00PM-1:00PM', 'PHP Programming', 'approved', '2025-05-14 18:27:27', '2025-05-14 18:27:40'),
+(22, 2000, '530', 'PC6', '2025-05-17', '12:00PM-1:00PM', 'C++ Programming', 'approved', '2025-05-14 19:05:23', '2025-05-14 19:06:36'),
+(23, 2000, '524', 'PC7', '2025-05-20', '7:30AM-9:00AM', 'C Programming', 'approved', '2025-05-14 19:08:21', '2025-05-14 19:08:32'),
+(24, 20951505, '524', 'PC8', '2025-05-20', '7:30AM-9:00AM', 'Python Programming', 'rejected', '2025-05-14 19:09:51', '2025-05-14 19:11:31');
 
 -- --------------------------------------------------------
 
@@ -704,7 +737,14 @@ INSERT INTO `sitin_records` (`ID`, `IDNO`, `PURPOSE`, `LABORATORY`, `TIME_IN`, `
 (62, 3123052, 'Java Programming', '544', '2025-05-08 15:49:02', '2025-05-08 15:49:07'),
 (63, 3123052, 'Java Programming', '544', '2025-05-08 15:49:20', '2025-05-08 15:49:23'),
 (64, 2233311, 'Python Programming', '526', '2025-05-08 15:49:37', '2025-05-08 15:49:40'),
-(65, 19894948, 'PHP Programming', '524', '2025-05-08 15:51:41', '2025-05-08 15:51:46');
+(65, 19894948, 'PHP Programming', '524', '2025-05-08 15:51:41', '2025-05-08 15:51:46'),
+(68, 20951505, 'Python Programming', '530', '2025-05-19 04:30:00', '2025-05-15 02:26:32'),
+(69, 3123052, 'PHP Programming', '530', '2025-05-15 02:26:20', '2025-05-15 02:26:34'),
+(70, 2000, 'PHP Programming', '544', '2025-05-20 12:00:00', '2025-05-15 02:28:31'),
+(71, 2000, 'C Programming', '542', '2025-05-15 02:59:12', '2025-05-15 02:59:39'),
+(72, 2000, 'PHP Programming', '526', '2025-05-15 03:01:24', '2025-05-15 03:01:27'),
+(73, 2000, 'C++ Programming', '530', '2025-05-17 12:00:00', NULL),
+(74, 2000, 'C Programming', '524', '2025-05-20 07:30:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -732,13 +772,13 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`ID`, `IDNO`, `LASTNAME`, `FIRSTNAME`, `MIDDLENAME`, `COURSE`, `YEAR_LEVEL`, `USERNAME`, `PASSWORD`, `PROFILE_PIC`, `SESSION_COUNT`, `POINTS`) VALUES
-(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 23, 5),
+(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 19, 8),
 (4, 3000, 'Doe', 'Jake', '', 'BSIT', 1, 'jake123', '$2y$10$.kySdo9lb7URfqAf8VZTSOyVEOfNT9aUQFZsyfHxX5T2tOIEyg0CC', 'images/default_pic.png', 25, 3),
 (9, 202025, 'White', 'Walter', 'Hartwell', 'BSCpE', 4, 'heisenberg', '$2y$10$QHQpJXwsI818Fe6v7z5RK.1ZaWkxKe5qYwDDqTsfQaIG1RtRwTB7S', 'uploads/681c64fb4d0e1_Omg kitty.jpg', 30, 0),
 (8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 28, 2),
-(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 26, 4),
+(3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 25, 5),
 (6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$r25EqLHKI9qcm2PaeWR.ceriLWv/rLx1.sEtjL9vTJm8xx93yNfc.', 'uploads/681c6596a1c98_pexels-photo-2719416.jpeg', 29, 1),
-(1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 24, 12),
+(1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 23, 10),
 (7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$.J4.UBYjIliIiBcXATySMuaWICUWjnWmoquzeNkf3xt/M3ajpppCG', 'images/default_pic.png', 30, 0);
 
 --
@@ -775,6 +815,13 @@ ALTER TABLE `lab_resources`
 --
 ALTER TABLE `lab_schedule`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `pc_status`
@@ -839,6 +886,12 @@ ALTER TABLE `lab_schedule`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
 
 --
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `pc_status`
 --
 ALTER TABLE `pc_status`
@@ -848,13 +901,13 @@ ALTER TABLE `pc_status`
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `sitin_records`
 --
 ALTER TABLE `sitin_records`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
 
 --
 -- AUTO_INCREMENT for table `user`
@@ -871,6 +924,12 @@ ALTER TABLE `user`
 --
 ALTER TABLE `feedback`
   ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`SITIN_RECORD_ID`) REFERENCES `sitin_records` (`ID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`IDNO`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `reservations`
