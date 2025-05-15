@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CCS Sit-in Monirtoring System</title>
-    <link rel="stylesheet" href="w3.css">
+    <link rel="stylesheet" href="css/w3.css">
     <style>
         body {
             background: rgb(100, 25, 117);
@@ -35,7 +35,7 @@
 </html>
 
 <?php
-include 'connect.php';
+include 'includes/connect.php';
 session_start();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -55,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['loggedin'] = true;
             $_SESSION['user'] = $admin;
             $_SESSION['is_admin'] = true;
-            header("Location: admin.php");
+            header("Location: admin/admin.php");
             exit();
         } else {
             echo "<script>alert('Invalid Admin Username/Password');</script>";
@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['loggedin'] = true;
                 $_SESSION['user'] = $user;
                 $_SESSION['is_admin'] = false;
-                header("Location: dashboard.php");
+                header("Location: student/dashboard.php");
                 exit();
             } else {
                 echo "<script>alert('Invalid Username/Password');</script>";

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration</title>
-    <link rel="stylesheet" href="w3.css">
+    <link rel="stylesheet" href="css/w3.css">
     <style>
         body
         {
@@ -70,7 +70,7 @@
 </html>
 
 <?php
- include 'connect.php';
+ include 'includes/connect.php';
  
  if($_SERVER["REQUEST_METHOD"]=="POST"){
      

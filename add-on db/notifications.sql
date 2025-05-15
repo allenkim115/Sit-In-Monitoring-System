@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
+  `user_id` varchar(20) DEFAULT NULL,
   `recipient_type` enum('user','admin') NOT NULL DEFAULT 'user',
   `type` enum('reservation_request','reservation_approved','reservation_rejected','reward_received') NOT NULL,
   `message` text NOT NULL,
