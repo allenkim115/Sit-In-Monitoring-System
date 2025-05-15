@@ -87,29 +87,79 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['timeout_id'])) {
     } 
 }
 
-// Base SQL query for current sit-ins
-$sql_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, u.SESSION_COUNT
+// Base SQL query for direct sit-ins
+$sql_direct_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, u.SESSION_COUNT
                FROM sitin_records sr
                JOIN user u ON sr.IDNO = u.IDNO
-               WHERE sr.TIME_OUT IS NULL";
+               WHERE sr.TIME_OUT IS NULL 
+               AND NOT EXISTS (
+                   SELECT 1 FROM reservations r 
+                   WHERE r.idno = sr.IDNO 
+                   AND r.room_number = sr.LABORATORY 
+                   AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+                   AND r.status = 'approved'
+               )";
+
+// Base SQL query for reserved sit-ins
+$sql_reserved_sitins = "SELECT sr.ID, u.IDNO, u.FIRSTNAME, u.LASTNAME, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, u.SESSION_COUNT,
+                        r.reservation_date, r.time_slot
+                        FROM sitin_records sr
+                        JOIN user u ON sr.IDNO = u.IDNO
+                        JOIN reservations r ON r.idno = sr.IDNO 
+                            AND r.room_number = sr.LABORATORY 
+                            AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+                            AND r.status = 'approved'
+                        WHERE sr.TIME_OUT IS NULL";
+
+// Auto timeout expired reservations
+$sql_auto_timeout = "UPDATE sitin_records sr
+                    JOIN reservations r ON r.idno = sr.IDNO 
+                        AND r.room_number = sr.LABORATORY 
+                        AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+                        AND r.status = 'approved'
+                    JOIN user u ON sr.IDNO = u.IDNO
+                    SET sr.TIME_OUT = NOW(),
+                        u.SESSION_COUNT = u.SESSION_COUNT - 1
+                    WHERE sr.TIME_OUT IS NULL
+                    AND (
+                        DATE(r.reservation_date) < CURDATE()
+                        OR (
+                            DATE(r.reservation_date) = CURDATE()
+                            AND TIME(SUBSTRING_INDEX(r.time_slot, '-', -1)) < CURTIME()
+                        )
+                    )";
+
+$conn->query($sql_auto_timeout);
 
 // Check if search term is submitted
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search_term = mysqli_real_escape_string($conn, $_GET['search']);
     // Search by IDNO or name while maintaining current sit-in filter
-    $sql_sitins .= " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    $search_condition = " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    $sql_direct_sitins .= $search_condition;
+    $sql_reserved_sitins .= $search_condition;
 }
 
 // Add order by clause
-$sql_sitins .= " ORDER BY sr.TIME_IN DESC";
+$sql_direct_sitins .= " ORDER BY sr.TIME_IN DESC";
+$sql_reserved_sitins .= " ORDER BY sr.TIME_IN DESC";
 
-// Execute the query
-$result_sitins = $conn->query($sql_sitins);
+// Execute the queries
+$result_direct_sitins = $conn->query($sql_direct_sitins);
+$result_reserved_sitins = $conn->query($sql_reserved_sitins);
 
-$sitin_records = [];
-if ($result_sitins->num_rows > 0) {
-    while ($row = $result_sitins->fetch_assoc()) {
-        $sitin_records[] = $row;
+$direct_sitin_records = [];
+$reserved_sitin_records = [];
+
+if ($result_direct_sitins->num_rows > 0) {
+    while ($row = $result_direct_sitins->fetch_assoc()) {
+        $direct_sitin_records[] = $row;
+    }
+}
+
+if ($result_reserved_sitins->num_rows > 0) {
+    while ($row = $result_reserved_sitins->fetch_assoc()) {
+        $reserved_sitin_records[] = $row;
     }
 }
 include 'search_modal.php';
@@ -177,6 +227,7 @@ include 'search_modal.php';
                 <div class="w3-col m6">
                     <form method="GET" class="w3-bar">
                         <input type="text" name="search" class="w3-input w3-border w3-round" style="width: auto; display: inline-block;" placeholder="IDNO/Name" value="<?php echo htmlspecialchars($search_term); ?>">
+                        <input type="hidden" name="active_tab" id="active_tab_input" value="<?php echo isset($_GET['active_tab']) ? htmlspecialchars($_GET['active_tab']) : 'Direct'; ?>">
                         <button type="submit" class="w3-button w3-purple w3-round-large w3-small">Search</button>
                         <a href="currentSitin.php" class="w3-button w3-gray w3-round-large w3-small">Clear</a>
                     </form>
@@ -184,68 +235,159 @@ include 'search_modal.php';
             <div class="w3-container" style="margin: 0 10px; display: flex; justify-content: flex-end;">
                 <a href="SitinRecords.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Sit-in Records</a>
             </div>
-            <h2 class="w3-margin-bottom">Current Sit-in</h2>            
-            <table class="sitin-table">
-                <thead>
-                    <tr>
-                        <th>IDNO</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Purpose</th>
-                        <th>Laboratory</th>
-                        <th>Sessions</th>
-                        <th>Time In</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php if (isset($_SESSION['timeout_success'])) : ?>                    
-                    <div id="timeoutSuccess" class="w3-panel w3-green w3-display-container" style="margin-bottom: 20px;">
-                        <span class="w3-xlarge" style="margin-right: 8px;">&#x2714;</span>
-                        <?php echo htmlspecialchars($_SESSION['timeout_success']); unset($_SESSION['timeout_success']); ?>
-                    </div>
-                    <script>
-                        setTimeout(function() {
-                            var timeoutSuccess = document.getElementById('timeoutSuccess');
-                            if (timeoutSuccess) {
-                                timeoutSuccess.style.display = 'none';
-                            }
-                        }, 2000);
-                    </script>
-                <?php endif; ?>
-                <?php if (count($sitin_records) > 0) : ?>
-                    <?php foreach ($sitin_records as $record) : ?>
+
+            <!-- Tab Navigation -->
+            <div class="w3-bar w3-light-grey w3-round-large">
+                <button class="w3-bar-item w3-button <?php echo (!isset($_GET['active_tab']) || $_GET['active_tab'] === 'Direct') ? 'w3-purple' : ''; ?>" onclick="openTab('Direct')">Direct Sit-ins</button>
+                <button class="w3-bar-item w3-button <?php echo (isset($_GET['active_tab']) && $_GET['active_tab'] === 'Reserved') ? 'w3-purple' : ''; ?>" onclick="openTab('Reserved')">Reserved Sit-ins</button>
+            </div>
+
+            <!-- Direct Sit-ins Tab -->
+            <div id="Direct" class="w3-container tab" style="display:<?php echo (!isset($_GET['active_tab']) || $_GET['active_tab'] === 'Direct') ? 'block' : 'none'; ?>">
+                <h2 class="w3-margin-bottom">Direct Sit-ins</h2>            
+                <table class="sitin-table">
+                    <thead>
                         <tr>
-                            <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
-                            <td><?php echo htmlspecialchars($record['FIRSTNAME']); ?></td>
-                            <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
-                            <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
-                            <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
-                            <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
-                            <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
-                            <td style="text-align: center;">
-                                <!-- Regular Time Out -->
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
-                                    <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
-                                    <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
-                                    <button type="submit" name="timeout_regular" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
-                                </form>
-                                <!-- Time Out with Reward -->
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('Time out and reward this user?');">
-                                    <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
-                                    <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
-                                    <button type="submit" name="timeout_reward" class="w3-button w3-green w3-round-large w3-small">Time Out + Reward</button>
-                                </form>
-                            </td>
+                            <th>IDNO</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Purpose</th>
+                            <th>Laboratory</th>
+                            <th>Sessions</th>
+                            <th>Time In</th>
+                            <th>Action</th>
                         </tr>
-                    <?php endforeach; ?>
-                <?php else : ?>
-                    <tr>
-                        <td colspan="8">No current sit-ins found.</td>
-                    </tr>
-                <?php endif; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    <?php if (isset($_SESSION['timeout_success'])) : ?>                    
+                        <div id="timeoutSuccess" class="w3-panel w3-green w3-display-container" style="margin-bottom: 20px;">
+                            <span class="w3-xlarge" style="margin-right: 8px;">&#x2714;</span>
+                            <?php echo htmlspecialchars($_SESSION['timeout_success']); unset($_SESSION['timeout_success']); ?>
+                        </div>
+                        <script>
+                            setTimeout(function() {
+                                var timeoutSuccess = document.getElementById('timeoutSuccess');
+                                if (timeoutSuccess) {
+                                    timeoutSuccess.style.display = 'none';
+                                }
+                            }, 2000);
+                        </script>
+                    <?php endif; ?>
+                    <?php if (count($direct_sitin_records) > 0) : ?>
+                        <?php foreach ($direct_sitin_records as $record) : ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
+                                <td><?php echo htmlspecialchars($record['FIRSTNAME']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
+                                <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
+                                <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
+                                <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
+                                <td style="text-align: center;">
+                                    <!-- Regular Time Out -->
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
+                                        <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                        <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                        <button type="submit" name="timeout_regular" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
+                                    </form>
+                                    <!-- Time Out with Reward -->
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Time out and reward this user?');">
+                                        <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                        <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                        <button type="submit" name="timeout_reward" class="w3-button w3-green w3-round-large w3-small">Time Out + Reward</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="8">No direct sit-ins found.</td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reserved Sit-ins Tab -->
+            <div id="Reserved" class="w3-container tab" style="display:<?php echo (isset($_GET['active_tab']) && $_GET['active_tab'] === 'Reserved') ? 'block' : 'none'; ?>">
+                <h2 class="w3-margin-bottom">Reserved Sit-ins</h2>            
+                <table class="sitin-table">
+                    <thead>
+                        <tr>
+                            <th>IDNO</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Purpose</th>
+                            <th>Laboratory</th>
+                            <th>Sessions</th>
+                            <th>Time In</th>
+                            <th>Reserved Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (count($reserved_sitin_records) > 0) : ?>
+                        <?php foreach ($reserved_sitin_records as $record) : 
+                            // Get server's current date and time
+                            $server_date = date('Y-m-d');
+                            $server_time = date('H:i:s');
+                            
+                            // Parse the time slot
+                            $time_slot = explode('-', $record['time_slot']);
+                            $start_time = date('H:i:s', strtotime($time_slot[0]));
+                            $end_time = date('H:i:s', strtotime($time_slot[1]));
+                            
+                            // Check if current server date matches reservation date
+                            $is_correct_date = ($server_date === date('Y-m-d', strtotime($record['reservation_date'])));
+                            
+                            // Check if current server time is within the reservation time slot
+                            $is_within_time_slot = ($is_correct_date && $server_time >= $start_time && $server_time <= $end_time);
+                        ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
+                                <td><?php echo htmlspecialchars($record['FIRSTNAME']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LASTNAME']); ?></td>
+                                <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
+                                <td><?php echo htmlspecialchars($record['SESSION_COUNT']); ?></td>
+                                <td><?php echo date("Y-m-d g:i a", strtotime($record['TIME_IN'])); ?></td>
+                                <td><?php echo date("Y-m-d", strtotime($record['reservation_date'])) . " " . $record['time_slot']; ?></td>
+                                <td style="text-align: center;">
+                                    <?php if ($is_within_time_slot) : ?>
+                                        <!-- Regular Time Out -->
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to time out this user?');">
+                                            <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                            <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                            <button type="submit" name="timeout_regular" class="w3-button w3-red w3-round-large w3-small">Time Out</button>
+                                        </form>
+                                        <!-- Time Out with Reward -->
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Time out and reward this user?');">
+                                            <input type="hidden" name="timeout_id" value="<?php echo htmlspecialchars($record['IDNO']); ?>">
+                                            <input type="hidden" name="sitin_record_id" value="<?php echo htmlspecialchars($record['ID']); ?>">
+                                            <button type="submit" name="timeout_reward" class="w3-button w3-green w3-round-large w3-small">Time Out + Reward</button>
+                                        </form>
+                                    <?php else : ?>
+                                        <span class="w3-text-gray">
+                                            <?php 
+                                            if (!$is_correct_date) {
+                                                echo "Not the reserved date";
+                                            } else {
+                                                echo "Not within reserved time slot";
+                                            }
+                                            ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="9">No reserved sit-ins found.</td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     <script>
@@ -255,6 +397,25 @@ include 'search_modal.php';
 
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
+        }
+
+        function openTab(tabName) {
+            var i;
+            var x = document.getElementsByClassName("tab");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            document.getElementById(tabName).style.display = "block";
+            
+            // Update tab button styles
+            var buttons = document.getElementsByClassName("w3-bar-item");
+            for (i = 0; i < buttons.length; i++) {
+                buttons[i].className = buttons[i].className.replace(" w3-purple", "");
+            }
+            event.currentTarget.className += " w3-purple";
+
+            // Update hidden input value
+            document.getElementById('active_tab_input').value = tabName;
         }
     </script>
 </body>

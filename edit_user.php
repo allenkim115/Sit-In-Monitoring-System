@@ -177,6 +177,17 @@ unset($_SESSION['update_error']);
                     <option value="BSIT" <?php if ($user['COURSE'] == 'BSIT') echo 'selected'; ?>>BSIT</option>
                     <option value="BSCS" <?php if ($user['COURSE'] == 'BSCS') echo 'selected'; ?>>BSCS</option>
                     <option value="BSCpE" <?php if ($user['COURSE'] == 'BSCpE') echo 'selected'; ?>>BSCpE</option>
+                    <option value="ACT" <?php if ($user['COURSE'] == 'ACT') echo 'selected'; ?>>ACT</option>
+                    <option value="BSCE" <?php if ($user['COURSE'] == 'BSCE') echo 'selected'; ?>>BSCE</option>
+                    <option value="BSCEE" <?php if ($user['COURSE'] == 'BSCEE') echo 'selected'; ?>>BSCEE</option>
+                    <option value="BSA" <?php if ($user['COURSE'] == 'BSA') echo 'selected'; ?>>BSA</option>
+                    <option value="BSBA" <?php if ($user['COURSE'] == 'BSBA') echo 'selected'; ?>>BSBA</option>
+                    <option value="BSOA" <?php if ($user['COURSE'] == 'BSOA') echo 'selected'; ?>>BSOA</option>
+                    <option value="BEEd" <?php if ($user['COURSE'] == 'BEEd') echo 'selected'; ?>>BEEd</option>
+                    <option value="BSEd" <?php if ($user['COURSE'] == 'BSEd') echo 'selected'; ?>>BSEd</option>
+                    <option value="AB PolSci" <?php if ($user['COURSE'] == 'AB PolSci') echo 'selected'; ?>>AB PolSci</option>
+                    <option value="BSCrim" <?php if ($user['COURSE'] == 'BSCrim') echo 'selected'; ?>>BSCrim</option>
+                    <option value="BSHRM" <?php if ($user['COURSE'] == 'BSHRM') echo 'selected'; ?>>BSHRM</option>
                 </select><br>
                 <label for="year_lvl">Year Level:</label>
                 <select class="w3-input w3-border w3-round w3-select" name="year_lvl" required>

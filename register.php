@@ -38,6 +38,18 @@
                     <option value="BSIT">BSIT</option>
                     <option value="BSCS">BSCS</option>
                     <option value="BSCpE">BSCpE</option>
+                    <option value="ACT">ACT</option>
+                    <option value="BSCE">BSCE</option>
+                    <option value="BSCEE">BSCEE</option>
+                    <option value="BSA">BSA</option>
+                    <option value="BSBA">BSBA</option>
+                    <option value="BSOA">BSOA</option>
+                    <option value="BEEd">BEEd</option>
+                    <option value="BSEd">BSEd</option>
+                    <option value="AB PolSci">AB PolSci</option>
+                    <option value="BSCrim">BSCrim</option>
+                    <option value="BSHRM">BSHRM</option>
+                    
                   </select><br>
                 <select class=" w3-input w3-border w3-round w3-select" name="year_lvl" required>
                     <option value=""disabled selected>Year Level</option>

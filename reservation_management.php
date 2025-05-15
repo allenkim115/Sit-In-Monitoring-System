@@ -91,7 +91,8 @@ while ($row = mysqli_fetch_assoc($result)) {
         }
         .actions-bar {
             display: flex;
-            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 24px;
         }
         .action-btn {
@@ -195,7 +196,6 @@ while ($row = mysqli_fetch_assoc($result)) {
         .pc-card.used .status-dot { background: #8B0000; }
         .pc-card.maintenance .status-dot { background: #e67e22; }
         .legend {
-            margin-top: 32px;
             display: flex;
             gap: 24px;
             align-items: center;
@@ -264,10 +264,17 @@ while ($row = mysqli_fetch_assoc($result)) {
                 </select>
             </div>
             <div class="actions-bar">
-                <button class="action-btn" id="selectAll"><i class="fa-solid fa-list-check"></i> Select All</button>
-                <button class="action-btn available" id="setAvailable"><i class="fa fa-circle"></i> Set Available</button>
-                <button class="action-btn used" id="setUsed"><i class="fa fa-circle"></i> Set Used</button>
-                <button class="action-btn maintenance" id="setMaintenance"><i class="fa fa-wrench"></i> Set Maintenance</button>
+                <div style="display: flex; gap: 12px;">
+                    <button class="action-btn" id="selectAll"><i class="fa-solid fa-list-check"></i> Select All</button>
+                    <button class="action-btn available" id="setAvailable"><i class="fa fa-circle"></i> Set Available</button>
+                    <button class="action-btn used" id="setUsed"><i class="fa fa-circle"></i> Set Used</button>
+                    <button class="action-btn maintenance" id="setMaintenance"><i class="fa fa-wrench"></i> Set Maintenance</button>
+                </div>
+                <div class="legend">
+                    <span><span class="dot available"></span> Available</span>
+                    <span><span class="dot used"></span> Used</span>
+                    <span><span class="dot maintenance"></span> Maintenance</span>
+                </div>
             </div>
             <div class="pc-grid" id="pcGrid">
                 <?php foreach ($pcs as $pc): ?>
@@ -277,11 +284,6 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <div class="pc-name"><?= htmlspecialchars($pc['pc_number']) ?></div>
                     </div>
                 <?php endforeach; ?>
-            </div>
-            <div class="legend">
-                <span><span class="dot available"></span> Available</span>
-                <span><span class="dot used"></span> Used</span>
-                <span><span class="dot maintenance"></span> Maintenance</span>
             </div>
         </div>
     </div>

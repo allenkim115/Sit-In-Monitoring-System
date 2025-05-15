@@ -8,6 +8,67 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_
     exit;
 }
 
+// Get admin's notifications
+$sql_notifications = "SELECT * FROM notifications 
+                     WHERE recipient_type = 'admin' 
+                     AND (type = 'reservation_request' OR type = 'reservation_approved' OR type = 'reservation_rejected' OR type = '')
+                     ORDER BY created_at DESC LIMIT 5";
+$result_notifications = $conn->query($sql_notifications);
+if (!$result_notifications) {
+    error_log("SQL Error in admin.php notifications query: " . $conn->error);
+    echo '<div style="color:red;font-weight:bold;">SQL Error: ' . $conn->error . '</div>';
+}
+$notifications = [];
+if($result_notifications && $result_notifications->num_rows > 0){
+    while ($row = $result_notifications->fetch_assoc()){
+        error_log("Found notification: " . print_r($row, true));
+        $notifications[] = $row;
+    }
+} else {
+    error_log("No notifications found for admin");
+}
+
+// Debug: Check all notifications in database
+if (isset($_GET['debug_notif'])) {
+    echo '<div style="background: #f5f5f5; padding: 10px; margin: 10px; border: 1px solid #ddd;">';
+    echo '<h3>Debug Information:</h3>';
+    
+    // Check all notifications
+    $sql_debug = "SELECT * FROM notifications ORDER BY created_at DESC";
+    $result_debug = $conn->query($sql_debug);
+    echo '<h4>All Notifications in Database:</h4>';
+    echo '<pre>';
+    if ($result_debug && $result_debug->num_rows > 0) {
+        while ($row = $result_debug->fetch_assoc()) {
+            print_r($row);
+        }
+    } else {
+        echo "No notifications found in database.";
+    }
+    echo '</pre>';
+    
+    // Check admin notifications specifically
+    echo '<h4>Admin Notifications Query:</h4>';
+    echo '<pre>';
+    echo "SQL: " . $sql_notifications . "\n";
+    echo "Result rows: " . ($result_notifications ? $result_notifications->num_rows : 0) . "\n";
+    if ($result_notifications && $result_notifications->num_rows > 0) {
+        print_r($notifications);
+    } else {
+        echo "No admin notifications found.";
+    }
+    echo '</pre>';
+    echo '</div>';
+}
+
+// Get unread notification count
+$sql_unread = "SELECT COUNT(*) as unread FROM notifications 
+               WHERE recipient_type = 'admin' 
+               AND (type = 'reservation_request' OR type = 'reservation_approved' OR type = 'reservation_rejected' OR type = '')
+               AND is_read = 0";
+$result_unread = $conn->query($sql_unread);
+$unread_count = $result_unread->fetch_assoc()['unread'];
+
 // Fetch statistics
 $sql_total_students = "SELECT COUNT(*) as total_registered FROM user";
 $result_total_students = $conn->query($sql_total_students);
@@ -30,8 +91,30 @@ if ($result_purpose_counts->num_rows > 0) {
         $purpose_counts[$row['PURPOSE']] = $row['count'];
     }
 }
-
-// Prepare data for the pie chart
+// Ensure all purposes are present, even if zero
+$all_purposes = [
+    "C Programming",
+    "Java Programming",
+    "C#",
+    "PHP",
+    "ASP.Net",
+    "Database",
+    "Digital Logic & Design",
+    "Embedded System % IOT",
+    "Python Programming",
+    "Systems Integration & Architecture",
+    "Computer Application",
+    "Web Design & Development",
+    "Project Management",
+    "Other"
+];
+foreach ($all_purposes as $purpose) {
+    if (!isset($purpose_counts[$purpose])) {
+        $purpose_counts[$purpose] = 0;
+    }
+}
+// Keep the order
+$purpose_counts = array_replace(array_flip($all_purposes), $purpose_counts);
 $chart_labels = json_encode(array_keys($purpose_counts));
 $chart_data = json_encode(array_values($purpose_counts));
 
@@ -140,7 +223,10 @@ if ($result_sitins->num_rows > 0) {
 }
 
 // Fetch top 5 users by points for leaderboard
-$sql_leaderboard = "SELECT IDNO, FIRSTNAME, LASTNAME, POINTS FROM user ORDER BY POINTS DESC, FIRSTNAME ASC LIMIT 5";
+$sql_leaderboard = "SELECT u.IDNO, u.FIRSTNAME, u.LASTNAME, u.POINTS, 
+                    (SELECT COUNT(*) FROM sitin_records sr WHERE sr.IDNO = u.IDNO) as sitin_count 
+                    FROM user u 
+                    ORDER BY u.POINTS DESC, sitin_count DESC, u.FIRSTNAME ASC LIMIT 5";
 $result_leaderboard = $conn->query($sql_leaderboard);
 $leaderboard = [];
 if ($result_leaderboard->num_rows > 0) {
@@ -183,6 +269,200 @@ include 'search_modal.php';
             margin: 0 5px;
         }
         .leaderboard-icon { font-size: 1.2em; margin-right: 5px; }
+        
+        /* Notification Styles */
+        .notif-bell-btn {
+            background: #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            border: none;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+        .notif-bell-btn:hover {
+            box-shadow: 0 4px 16px rgba(123,31,162,0.16);
+            background: #f3e6ff;
+        }
+        .notif-bell-btn i.fa-bell {
+            color: #7b1fa2 !important;
+            font-size: 1.7em;
+        }
+        .notif-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e53935;
+            color: #fff;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .notif-dropdown {
+            position: absolute;
+            right: 0;
+            top: 38px;
+            width: 340px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18), 0 1.5px 6px rgba(123,31,162,0.08);
+            z-index: 1001;
+            padding: 0 0 8px 0;
+            min-width: 260px;
+            border: 1px solid #ece6f6;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            animation: notifFadeIn 0.18s;
+        }
+        @keyframes notifFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .notif-header {
+            padding: 16px 20px 8px 20px;
+            font-size: 1.13em;
+            color: #222;
+            background: linear-gradient(90deg, #f7f3fa 0%, #ece6f6 100%);
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .notif-header a {
+            color: #a259c6;
+            font-size: 0.97em;
+            text-decoration: none;
+            transition: color 0.18s;
+        }
+        .notif-header a:hover {
+            color: #7b1fa2;
+            text-decoration: underline;
+        }
+        .notif-list {
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .notif-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 20px 12px 20px;
+            font-size: 1.01em;
+            border-bottom: 1px solid #f0f0f0;
+            background: #fff;
+            transition: background 0.18s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            text-decoration: none;
+            color: inherit;
+        }
+        .notif-item:last-child {
+            border-bottom: none;
+        }
+        .notif-item:hover {
+            background: #f7f3fa;
+            text-decoration: none;
+            color: inherit;
+        }
+        .notif-unread {
+            background: linear-gradient(90deg, #f7f3fa 60%, #fff 100%);
+            font-weight: 500;
+            border-left: 4px solid #b47ddb;
+        }
+        .notif-icon {
+            margin-top: 2px;
+            font-size: 1.25em;
+            flex-shrink: 0;
+        }
+        .notif-msg {
+            flex: 1;
+            color: #3d2956;
+            line-height: 1.4;
+        }
+        .notif-date {
+            font-size: 0.87em;
+            color: #a59bb0;
+            margin-left: 8px;
+            white-space: nowrap;
+            align-self: flex-end;
+        }
+        .notif-footer {
+            padding: 10px 0 0 0;
+            background: none;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+        .notif-footer a {
+            color: #a259c6;
+            text-align: center;
+            display: block;
+            font-weight: 500;
+            padding: 8px 0 6px 0;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.18s, color 0.18s;
+        }
+        .notif-footer a:hover {
+            color: #7b1fa2;
+            text-decoration: underline;
+        }
+        /* Custom close button for All Notifications modal */
+        #allNotifications .w3-button.w3-display-topright {
+            display: none;
+        }
+        .allnotif-header {
+            display: flex !important;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative;
+            padding: 22px 32px 22px 32px !important;
+            background: linear-gradient(90deg, #7b1fa2 0%, #b47ddb 100%);
+            box-shadow: 0 2px 8px rgba(123,31,162,0.08);
+        }
+        .allnotif-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: #fff;
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0;
+            z-index: 2;
+        }
+        .allnotif-title i {
+            font-size: 1.3em;
+        }
+        .allnotif-close {
+            position: absolute;
+            right: 32px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            color: #7b1fa2;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.7em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(123,31,162,0.08);
+            cursor: pointer;
+            z-index: 3;
+        }
+        .allnotif-close:hover {
+            background: #b47ddb;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(123,31,162,0.16);
+        }
     </style>
 </head>
 
@@ -210,6 +490,81 @@ include 'search_modal.php';
         <div class="title_page w3-container" style="display: flex; align-items: center;">
             <button class="w3-button w3-xlarge w3-hide-large" id="openNav" onclick="w3_open()" style="color: #ffff;">☰</button>
             <h1 style="margin-left: 10px; color: #ffff;">Admin Dashboard</h1>
+            <div class="notification-bell-container" style="position: relative; margin-left: auto; margin-right: 30px;">
+                <button id="notifBell" class="notif-bell-btn">
+                    <i class="fa fa-bell"></i>
+                    <?php if ($unread_count > 0): ?>
+                        <span class="notif-badge"><?php echo $unread_count; ?></span>
+                    <?php endif; ?>
+                </button>
+                <div id="notifDropdown" class="notif-dropdown" style="display: none;">
+                    <div class="notif-header">
+                        <span style="font-weight: bold;">Notifications</span>
+                        <a href="mark_all_notifications.php" style="float: right; color: #c0392b; font-size: 0.95em;">Mark all as read</a>
+                    </div>
+                    <hr style="margin: 6px 0;">
+                    <div class="notif-list">
+                        <?php if (count($notifications) > 0): ?>
+                            <?php foreach ($notifications as $notification): ?>
+                                <?php
+                                    $redirect_url = '';
+                                    $type = $notification['type'];
+                                    
+                                    // If type is empty, determine it from the message
+                                    if (empty($type)) {
+                                        if (strpos($notification['message'], 'has been submitted and is pending approval') !== false) {
+                                            $type = 'reservation_request';
+                                        } elseif (strpos($notification['message'], 'approved') !== false) {
+                                            $type = 'reservation_approved';
+                                        } elseif (strpos($notification['message'], 'rejected') !== false) {
+                                            $type = 'reservation_rejected';
+                                        }
+                                    }
+                                    
+                                    if ($type === 'reservation_request') {
+                                        $redirect_url = 'reservation_management.php?filter=Pending';
+                                    } elseif ($type === 'reservation_approved' || $type === 'reservation_rejected') {
+                                        $redirect_url = 'reservation_management.php?filter=' . ($type === 'reservation_approved' ? 'Approved' : 'Rejected');
+                                    }
+                                ?>
+                                <a href="javascript:void(0)" onclick="handleNotificationClick(<?php echo $notification['id']; ?>, '<?php echo $redirect_url; ?>')" class="notif-item<?php echo !$notification['is_read'] ? ' notif-unread' : ''; ?>">
+                                    <?php
+                                        $icon = '';
+                                        switch($type) {
+                                            case 'reservation_request':
+                                                $icon = '<i class="fa fa-calendar-check" style="color: #2196F3;"></i>';
+                                                break;
+                                            case 'reservation_approved':
+                                                $icon = '<i class="fa fa-check-circle" style="color: #4CAF50;"></i>';
+                                                break;
+                                            case 'reservation_rejected':
+                                                $icon = '<i class="fa fa-times-circle" style="color: #f44336;"></i>';
+                                                break;
+                                            default:
+                                                // Default icon for empty type
+                                                if (strpos($notification['message'], 'has been submitted and is pending approval') !== false) {
+                                                    $icon = '<i class="fa fa-calendar-check" style="color: #2196F3;"></i>';
+                                                } elseif (strpos($notification['message'], 'approved') !== false) {
+                                                    $icon = '<i class="fa fa-check-circle" style="color: #4CAF50;"></i>';
+                                                } elseif (strpos($notification['message'], 'rejected') !== false) {
+                                                    $icon = '<i class="fa fa-times-circle" style="color: #f44336;"></i>';
+                                                }
+                                        }
+                                    ?>
+                                    <span class="notif-icon"><?php echo $icon; ?></span>
+                                    <span class="notif-msg"><?php echo htmlspecialchars($notification['message']); ?></span>
+                                    <div class="notif-date"><?php echo date('M d, H:i', strtotime($notification['created_at'])); ?></div>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="notif-item">No notifications.</div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="notif-footer">
+                        <a href="#" onclick="document.getElementById('allNotifications').style.display='block'" style="color: #c0392b; text-align: center; display: block;">View all notifications</a>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="w3-row-padding" style="margin: 5% 10px;">
             <div class="w3-col m6">
@@ -225,6 +580,7 @@ include 'search_modal.php';
                                 <th>ID No</th>
                                 <th>Name</th>
                                 <th>Points</th>
+                                <th>Sit-ins</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -246,11 +602,12 @@ include 'search_modal.php';
                                         <td><?php echo htmlspecialchars($user['IDNO']); ?></td>
                                         <td><?php echo $icon . htmlspecialchars($user['FIRSTNAME'] . ' ' . $user['LASTNAME']); ?></td>
                                         <td><?php echo htmlspecialchars($user['POINTS']); ?></td>
+                                        <td><?php echo htmlspecialchars($user['sitin_count']); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4">No data available.</td>
+                                    <td colspan="5">No data available.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -347,12 +704,20 @@ include 'search_modal.php';
                     datasets: [{
                         data: <?php echo $chart_data; ?>,
                         backgroundColor: [
-                            'rgba(255, 99, 132, 0.8)',
-                            'rgba(54, 162, 235, 0.8)',
-                            'rgba(255, 206, 86, 0.8)',
-                            'rgba(75, 192, 192, 0.8)',
-                            'rgba(153, 102, 255, 0.8)',
-                            'rgba(255, 159, 64, 0.8)'
+                            'rgba(255, 99, 132, 0.8)',   // 1
+                            'rgba(54, 162, 235, 0.8)',   // 2
+                            'rgba(255, 206, 86, 0.8)',   // 3
+                            'rgba(75, 192, 192, 0.8)',   // 4
+                            'rgba(153, 102, 255, 0.8)',  // 5
+                            'rgba(255, 159, 64, 0.8)',   // 6
+                            'rgba(255, 205, 210, 0.8)',  // 7
+                            'rgba(100, 181, 246, 0.8)',  // 8
+                            'rgba(174, 213, 129, 0.8)',  // 9
+                            'rgba(255, 245, 157, 0.8)',  // 10
+                            'rgba(129, 212, 250, 0.8)',  // 11
+                            'rgba(244, 143, 177, 0.8)',  // 12
+                            'rgba(255, 224, 178, 0.8)',  // 13
+                            'rgba(197, 202, 233, 0.8)'   // 14
                         ],
                         borderColor: [
                             'rgba(255, 99, 132, 1)',
@@ -360,7 +725,15 @@ include 'search_modal.php';
                             'rgba(255, 206, 86, 1)',
                             'rgba(75, 192, 192, 1)',
                             'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 205, 210, 1)',
+                            'rgba(100, 181, 246, 1)',
+                            'rgba(174, 213, 129, 1)',
+                            'rgba(255, 245, 157, 1)',
+                            'rgba(129, 212, 250, 1)',
+                            'rgba(244, 143, 177, 1)',
+                            'rgba(255, 224, 178, 1)',
+                            'rgba(197, 202, 233, 1)'
                         ],
                         borderWidth: 1
                     }]
@@ -376,7 +749,122 @@ include 'search_modal.php';
                     }
                 }
             });
+
+            document.addEventListener('DOMContentLoaded', function() {
+                var bell = document.getElementById('notifBell');
+                var dropdown = document.getElementById('notifDropdown');
+                bell.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                });
+                document.addEventListener('click', function() {
+                    dropdown.style.display = 'none';
+                });
+            });
+
+            function handleNotificationClick(notificationId, redirectUrl) {
+                // Mark notification as read using AJAX
+                fetch('mark_notification_read.php?notification_id=' + notificationId, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove unread styling
+                        const notification = document.querySelector(`[onclick*="${notificationId}"]`);
+                        if (notification) {
+                            notification.classList.remove('notif-unread');
+                        }
+                        
+                        // Update unread count
+                        const badge = document.querySelector('.notif-badge');
+                        if (badge) {
+                            const currentCount = parseInt(badge.textContent);
+                            if (currentCount > 1) {
+                                badge.textContent = currentCount - 1;
+                            } else {
+                                badge.style.display = 'none';
+                            }
+                        }
+
+                        // Redirect if there's a URL
+                        if (redirectUrl) {
+                            window.location.href = redirectUrl;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
         </script>
+    </div>
+
+    <!-- All Notifications Modal -->
+    <div id="allNotifications" class="w3-modal" style="z-index: 1000;">
+        <div class="w3-modal-content w3-animate-zoom w3-round-xlarge" style="width: 50%;">
+            <header class="w3-container w3-purple w3-round-xlarge allnotif-header">
+                <div class="allnotif-title">
+                    <i class="fa fa-bell"></i>
+                    <span>All Notifications</span>
+                </div>
+                <button type="button" class="allnotif-close" onclick="document.getElementById('allNotifications').style.display='none'">&times;</button>
+            </header>
+            <div class="w3-container w3-padding">
+                <hr class="divider">
+                <div class="notif-list" style="max-height: 400px; overflow-y: auto;">
+                    <?php
+                    // Get all notifications for the admin
+                    $sql_all_notifications = "SELECT * FROM notifications 
+                                           WHERE recipient_type = 'admin' 
+                                           AND (type = 'reservation_request' OR type = 'reservation_approved' OR type = 'reservation_rejected' OR type = '')
+                                           ORDER BY created_at DESC";
+                    $result_all_notifications = $conn->query($sql_all_notifications);
+                    $all_notifications = [];
+                    if($result_all_notifications->num_rows > 0){
+                        while ($row = $result_all_notifications->fetch_assoc()){
+                            $all_notifications[] = $row;
+                        }
+                    }
+                    ?>
+                    <?php if (count($all_notifications) > 0): ?>
+                        <?php foreach ($all_notifications as $notification): ?>
+                            <div class="notif-item<?php echo !$notification['is_read'] ? ' notif-unread' : ''; ?>" style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1;">
+                                    <?php
+                                        $icon = '';
+                                        switch($notification['type']) {
+                                            case 'reservation_request':
+                                                $icon = '<i class="fa fa-calendar-check" style="color: #2196F3;"></i>';
+                                                break;
+                                            case 'reservation_approved':
+                                                $icon = '<i class="fa fa-check-circle" style="color: #4CAF50;"></i>';
+                                                break;
+                                            case 'reservation_rejected':
+                                                $icon = '<i class="fa fa-times-circle" style="color: #f44336;"></i>';
+                                                break;
+                                        }
+                                    ?>
+                                    <span class="notif-icon"><?php echo $icon; ?></span>
+                                    <div style="flex: 1;">
+                                        <span class="notif-msg"><?php echo htmlspecialchars($notification['message']); ?></span>
+                                        <div class="notif-date"><?php echo date('M d, H:i', strtotime($notification['created_at'])); ?></div>
+                                    </div>
+                                </div>
+                                <form method="POST" action="delete_notification.php" style="margin-left: 10px;">
+                                    <input type="hidden" name="notification_id" value="<?php echo $notification['id']; ?>">
+                                    <button type="submit" class="w3-button w3-red w3-round" style="padding: 4px 8px;">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="notif-item">No notifications.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>

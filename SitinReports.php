@@ -30,37 +30,45 @@ $purpose_filter = isset($_GET['purpose']) ? $_GET['purpose'] : '';
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
 
-// Base SQL query
-$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
-               FROM sitin_records sr
-               JOIN user u ON sr.IDNO = u.IDNO
-               WHERE 1=1";
+// Pagination parameters
+$records_per_page = 10;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $records_per_page;
 
-// Apply filters
+// Base SQL query for total count
+$sql_count = "SELECT COUNT(*) as total FROM sitin_records sr
+              JOIN user u ON sr.IDNO = u.IDNO
+              WHERE 1=1";
+
+// Only include completed sit-ins
+$sql_count .= " AND sr.TIME_OUT IS NOT NULL ";
+
+// Exclude reserved sit-ins that have not yet started
+$sql_count .= " AND NOT EXISTS (
+    SELECT 1 FROM reservations r
+    WHERE r.idno = sr.IDNO
+      AND r.room_number = sr.LABORATORY
+      AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+      AND r.status = 'approved'
+      AND CONCAT(r.reservation_date, ' ', SUBSTRING_INDEX(r.time_slot, '-', 1)) > NOW()
+)";
+
+// Apply filters to count query
 if (!empty($laboratory_filter)) {
-    $sql_sitins .= " AND sr.LABORATORY = ?";
+    $sql_count .= " AND sr.LABORATORY = ?";
 }
 if (!empty($purpose_filter)) {
-    $sql_sitins .= " AND sr.PURPOSE = ?";
+    $sql_count .= " AND sr.PURPOSE = ?";
 }
 if (!empty($date_from)) {
-    $sql_sitins .= " AND DATE(sr.TIME_IN) >= ?";
+    $sql_count .= " AND DATE(sr.TIME_IN) >= ?";
 }
 if (!empty($date_to)) {
-    $sql_sitins .= " AND DATE(sr.TIME_IN) <= ?";
+    $sql_count .= " AND DATE(sr.TIME_IN) <= ?";
 }
 
-$sql_sitins .= " ORDER BY sr.TIME_IN DESC";
-
-// For debugging
-error_log("SQL Query: " . $sql_sitins);
-error_log("Laboratory Filter: " . $laboratory_filter);
-error_log("Purpose Filter: " . $purpose_filter);
-error_log("Date From: " . $date_from);
-error_log("Date To: " . $date_to);
-
-// Prepare and execute the query
-$stmt_sitins = $conn->prepare($sql_sitins);
+// Prepare and execute count query
+$stmt_count = $conn->prepare($sql_count);
 
 // Bind parameters if filters are set
 $types = '';
@@ -83,10 +91,68 @@ if (!empty($date_to)) {
     $params[] = $date_to;
 }
 
-// For debugging
-error_log("Parameter Types: " . $types);
-error_log("Parameters: " . print_r($params, true));
+if (!empty($params)) {
+    $stmt_count->bind_param($types, ...$params);
+}
+$stmt_count->execute();
+$total_records = $stmt_count->get_result()->fetch_assoc()['total'];
+$total_pages = ceil($total_records / $records_per_page);
+$stmt_count->close();
 
+// Base SQL query for records
+$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
+               FROM sitin_records sr
+               JOIN user u ON sr.IDNO = u.IDNO
+               WHERE 1=1";
+
+// Only include completed sit-ins
+$sql_sitins .= " AND sr.TIME_OUT IS NOT NULL ";
+
+// Exclude reserved sit-ins that have not yet started
+$sql_sitins .= " AND NOT EXISTS (
+    SELECT 1 FROM reservations r
+    WHERE r.idno = sr.IDNO
+      AND r.room_number = sr.LABORATORY
+      AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+      AND r.status = 'approved'
+      AND CONCAT(r.reservation_date, ' ', SUBSTRING_INDEX(r.time_slot, '-', 1)) > NOW()
+)";
+
+// Apply filters
+if (!empty($laboratory_filter)) {
+    $sql_sitins .= " AND sr.LABORATORY = ?";
+}
+if (!empty($purpose_filter)) {
+    $sql_sitins .= " AND sr.PURPOSE = ?";
+}
+if (!empty($date_from)) {
+    $sql_sitins .= " AND DATE(sr.TIME_IN) >= ?";
+}
+if (!empty($date_to)) {
+    $sql_sitins .= " AND DATE(sr.TIME_IN) <= ?";
+}
+
+// Add pagination to the query only if not exporting
+if (!isset($_GET['export'])) {
+    $sql_sitins .= " ORDER BY sr.TIME_IN DESC LIMIT ? OFFSET ?";
+    $types .= 'ii';
+    $params[] = $records_per_page;
+    $params[] = $offset;
+} else {
+    $sql_sitins .= " ORDER BY sr.TIME_IN DESC";
+}
+
+// For debugging
+error_log("SQL Query: " . $sql_sitins);
+error_log("Laboratory Filter: " . $laboratory_filter);
+error_log("Purpose Filter: " . $purpose_filter);
+error_log("Date From: " . $date_from);
+error_log("Date To: " . $date_to);
+
+// Prepare and execute the query
+$stmt_sitins = $conn->prepare($sql_sitins);
+
+// Bind parameters if filters are set
 if (!empty($params)) {
     $stmt_sitins->bind_param($types, ...$params);
 }
@@ -525,6 +591,46 @@ include 'search_modal.php';
                     <?php endif; ?>
                 </tbody>
             </table>
+
+            <!-- Pagination Controls -->
+            <?php if (!isset($_GET['export']) && $total_pages > 1): ?>
+            <div class="w3-center w3-padding-16">
+                <div class="w3-bar">
+                    <?php if ($page > 1): ?>
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" class="w3-button w3-purple">&laquo;</a>
+                    <?php endif; ?>
+                    
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    
+                    if ($start_page > 1) {
+                        echo '<a href="?' . http_build_query(array_merge($_GET, ['page' => 1])) . '" class="w3-button w3-purple">1</a>';
+                        if ($start_page > 2) {
+                            echo '<span class="w3-button">...</span>';
+                        }
+                    }
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++) {
+                        $active = $i == $page ? 'w3-purple' : '';
+                        echo '<a href="?' . http_build_query(array_merge($_GET, ['page' => $i])) . '" class="w3-button ' . $active . '">' . $i . '</a>';
+                    }
+                    
+                    if ($end_page < $total_pages) {
+                        if ($end_page < $total_pages - 1) {
+                            echo '<span class="w3-button">...</span>';
+                        }
+                        echo '<a href="?' . http_build_query(array_merge($_GET, ['page' => $total_pages])) . '" class="w3-button w3-purple">' . $total_pages . '</a>';
+                    }
+                    ?>
+                    
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" class="w3-button w3-purple">&raquo;</a>
+                    <?php endif; ?>
+                </div>
+                <p class="w3-center">Page <?php echo $page; ?> of <?php echo $total_pages; ?></p>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 

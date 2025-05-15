@@ -647,6 +647,7 @@ CREATE TABLE `reservations` (
   `time_slot` varchar(20) NOT NULL,
   `purpose` text NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `rejection_reason` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -655,22 +656,22 @@ CREATE TABLE `reservations` (
 -- Dumping data for table `reservations`
 --
 
-INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservation_date`, `time_slot`, `purpose`, `status`, `created_at`, `updated_at`) VALUES
-(10, 2000, '524', 'PC6', '2025-05-09', '10:30AM-12:00PM', 'C++ Programming', 'approved', '2025-05-08 06:13:48', '2025-05-08 06:18:26'),
-(11, 2000, '524', 'PC6', '2025-05-09', '9:00AM-10:30AM', 'C Programming', 'approved', '2025-05-08 06:18:04', '2025-05-08 06:18:28'),
-(12, 2000, '524', 'PC8', '2025-05-09', '9:00AM-10:30AM', 'Java Programming', 'approved', '2025-05-08 06:48:13', '2025-05-08 07:13:39'),
-(13, 20951505, '524', 'PC7', '2025-05-09', '9:00AM-10:30AM', 'Python Programming', 'approved', '2025-05-08 07:12:58', '2025-05-08 07:13:40'),
-(14, 2000, '524', 'PC9', '2025-05-09', '9:00AM-10:30AM', 'C++ Programming', 'rejected', '2025-05-08 07:14:04', '2025-05-08 07:14:28'),
-(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', '2025-05-08 07:22:34', '2025-05-08 07:22:58'),
-(16, 20951505, '530', 'PC20', '2025-05-09', '1:00PM-3:00PM', '.Net Programming', 'rejected', '2025-05-08 08:07:31', '2025-05-14 18:20:39'),
-(17, 2000, '524', 'PC9', '2025-05-16', '7:30AM-9:00AM', 'Python Programming', 'approved', '2025-05-14 15:19:12', '2025-05-14 18:17:47'),
-(18, 2000, '526', 'PC1', '2025-05-19', '7:30AM-9:00AM', 'C++ Programming', 'approved', '2025-05-14 15:21:03', '2025-05-14 18:19:53'),
-(19, 20951505, '526', 'PC10', '2025-05-16', '10:30AM-12:00PM', 'PHP Programming', 'approved', '2025-05-14 18:21:18', '2025-05-14 18:22:06'),
-(20, 20951505, '530', 'PC10', '2025-05-19', '4:30PM-6:00PM', 'Python Programming', 'approved', '2025-05-14 18:26:00', '2025-05-14 18:26:08'),
-(21, 2000, '544', 'PC5', '2025-05-20', '12:00PM-1:00PM', 'PHP Programming', 'approved', '2025-05-14 18:27:27', '2025-05-14 18:27:40'),
-(22, 2000, '530', 'PC6', '2025-05-17', '12:00PM-1:00PM', 'C++ Programming', 'approved', '2025-05-14 19:05:23', '2025-05-14 19:06:36'),
-(23, 2000, '524', 'PC7', '2025-05-20', '7:30AM-9:00AM', 'C Programming', 'approved', '2025-05-14 19:08:21', '2025-05-14 19:08:32'),
-(24, 20951505, '524', 'PC8', '2025-05-20', '7:30AM-9:00AM', 'Python Programming', 'rejected', '2025-05-14 19:09:51', '2025-05-14 19:11:31');
+INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservation_date`, `time_slot`, `purpose`, `status`, `rejection_reason`, `created_at`, `updated_at`) VALUES
+(10, 2000, '524', 'PC6', '2025-05-09', '10:30AM-12:00PM', 'C++ Programming', 'approved', NULL, '2025-05-08 06:13:48', '2025-05-08 06:18:26'),
+(11, 2000, '524', 'PC6', '2025-05-09', '9:00AM-10:30AM', 'C Programming', 'approved', NULL, '2025-05-08 06:18:04', '2025-05-08 06:18:28'),
+(12, 2000, '524', 'PC8', '2025-05-09', '9:00AM-10:30AM', 'Java Programming', 'approved', NULL, '2025-05-08 06:48:13', '2025-05-08 07:13:39'),
+(13, 20951505, '524', 'PC7', '2025-05-09', '9:00AM-10:30AM', 'Python Programming', 'approved', NULL, '2025-05-08 07:12:58', '2025-05-08 07:13:40'),
+(14, 2000, '524', 'PC9', '2025-05-09', '9:00AM-10:30AM', 'C++ Programming', 'rejected', NULL, '2025-05-08 07:14:04', '2025-05-08 07:14:28'),
+(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', NULL, '2025-05-08 07:22:34', '2025-05-08 07:22:58'),
+(16, 20951505, '530', 'PC20', '2025-05-09', '1:00PM-3:00PM', '.Net Programming', 'rejected', NULL, '2025-05-08 08:07:31', '2025-05-14 18:20:39'),
+(17, 2000, '524', 'PC9', '2025-05-16', '7:30AM-9:00AM', 'Python Programming', 'approved', NULL, '2025-05-14 15:19:12', '2025-05-14 18:17:47'),
+(18, 2000, '526', 'PC1', '2025-05-19', '7:30AM-9:00AM', 'C++ Programming', 'approved', NULL, '2025-05-14 15:21:03', '2025-05-14 18:19:53'),
+(19, 20951505, '526', 'PC10', '2025-05-16', '10:30AM-12:00PM', 'PHP Programming', 'approved', NULL, '2025-05-14 18:21:18', '2025-05-14 18:22:06'),
+(20, 20951505, '530', 'PC10', '2025-05-19', '4:30PM-6:00PM', 'Python Programming', 'approved', NULL, '2025-05-14 18:26:00', '2025-05-14 18:26:08'),
+(21, 2000, '544', 'PC5', '2025-05-20', '12:00PM-1:00PM', 'PHP Programming', 'approved', NULL, '2025-05-14 18:27:27', '2025-05-14 18:27:40'),
+(22, 2000, '530', 'PC6', '2025-05-17', '12:00PM-1:00PM', 'C++ Programming', 'approved', NULL, '2025-05-14 19:05:23', '2025-05-14 19:06:36'),
+(23, 2000, '524', 'PC7', '2025-05-20', '7:30AM-9:00AM', 'C Programming', 'approved', NULL, '2025-05-14 19:08:21', '2025-05-14 19:08:32'),
+(24, 20951505, '524', 'PC8', '2025-05-20', '7:30AM-9:00AM', 'Python Programming', 'rejected', NULL, '2025-05-14 19:09:51', '2025-05-14 19:11:31');
 
 -- --------------------------------------------------------
 

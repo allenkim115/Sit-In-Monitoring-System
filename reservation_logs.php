@@ -24,11 +24,41 @@ if (isset($_SESSION['user']['USERNAME'])) {
 }
 
 // Date filter
-$date_filter = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
+$date_filter = isset($_GET['date']) ? $_GET['date'] : '';
 $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Build query
-$sql = "SELECT r.id, r.idno, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) as full_name, r.room_number, r.pc_number, r.reservation_date, r.time_slot, r.purpose, r.status 
+// Pagination settings
+$records_per_page = 10;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $records_per_page;
+
+// Build query for total count
+$count_sql = "SELECT COUNT(*) as total FROM reservations r LEFT JOIN user u ON r.idno = u.IDNO";
+$count_params = [];
+$count_types = '';
+
+if ($date_filter) {
+    $count_sql .= " WHERE DATE(r.reservation_date) = ?";
+    $count_params[] = $date_filter;
+    $count_types .= 's';
+}
+
+if ($status_filter && in_array($status_filter, ['pending','approved','rejected'])) {
+    $count_sql .= ($date_filter ? " AND" : " WHERE") . " r.status = ?";
+    $count_params[] = $status_filter;
+    $count_types .= 's';
+}
+
+$count_stmt = $conn->prepare($count_sql);
+if (!empty($count_params)) {
+    $count_stmt->bind_param($count_types, ...$count_params);
+}
+$count_stmt->execute();
+$total_records = $count_stmt->get_result()->fetch_assoc()['total'];
+$total_pages = ceil($total_records / $records_per_page);
+
+// Build main query with pagination
+$sql = "SELECT r.id, r.idno, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) as full_name, r.room_number, r.pc_number, r.reservation_date, r.time_slot, r.purpose, r.status, r.rejection_reason 
         FROM reservations r 
         LEFT JOIN user u ON r.idno = u.IDNO";
 
@@ -36,7 +66,7 @@ $params = [];
 $types = '';
 
 if ($date_filter) {
-    $sql .= " WHERE r.reservation_date = ?";
+    $sql .= " WHERE DATE(r.reservation_date) = ?";
     $params[] = $date_filter;
     $types .= 's';
 }
@@ -47,7 +77,10 @@ if ($status_filter && in_array($status_filter, ['pending','approved','rejected']
     $types .= 's';
 }
 
-$sql .= " ORDER BY r.reservation_date DESC, r.time_slot DESC";
+$sql .= " ORDER BY r.reservation_date DESC, r.time_slot DESC LIMIT ? OFFSET ?";
+$params[] = $records_per_page;
+$params[] = $offset;
+$types .= 'ii';
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
@@ -126,7 +159,7 @@ while ($row = $result->fetch_assoc()) {
                 <h2>Reservation Logs</h2>
             </div>
             <form method="get" class="filter-bar">
-                <input type="date" name="date" value="<?php echo htmlspecialchars($date_filter); ?>">
+                <input type="date" name="date" value="<?php echo htmlspecialchars($date_filter); ?>" onchange="this.form.submit()">
                 <div class="status-btns">
                     <button type="submit" name="status" value="" class="status-btn all<?php if($status_filter=='') echo ' active'; ?>">All</button>
                     <button type="submit" name="status" value="pending" class="status-btn pending<?php if($status_filter=='pending') echo ' active'; ?>">Pending</button>
@@ -145,11 +178,12 @@ while ($row = $result->fetch_assoc()) {
                         <th>Time</th>
                         <th>Purpose</th>
                         <th>Status</th>
+                        <th>Rejection Reason</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($logs)): ?>
-                        <tr><td colspan="8" style="text-align:center; color:#aaa;">No logs found for this date/status.</td></tr>
+                        <tr><td colspan="9" style="text-align:center; color:#aaa;">No logs found for this date/status.</td></tr>
                     <?php else: ?>
                         <?php foreach ($logs as $log): ?>
                             <tr>
@@ -160,12 +194,45 @@ while ($row = $result->fetch_assoc()) {
                                 <td><?php echo date('m/d/Y', strtotime($log['reservation_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($log['time_slot']); ?></td>
                                 <td><?php echo htmlspecialchars($log['purpose']); ?></td>
-                                <td><span class="status-pill <?php echo htmlspecialchars($log['status']); ?>"><?php echo ucfirst($log['status']); ?></span></td>
+                                <td>
+                                    <?php
+                                        $status = ucfirst($log['status']);
+                                        $color = $status === 'Pending' ? '#ffb300' : ($status === 'Approved' ? '#43a047' : ($status === 'Rejected' ? '#e53935' : '#757575'));
+                                    ?>
+                                    <span style="color:<?php echo $color; ?>; font-weight:600;"> <?php echo $status; ?> </span>
+                                </td>
+                                <td><?php echo $log['status'] === 'rejected' ? htmlspecialchars($log['rejection_reason']) : '-'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
+            <!-- Add pagination controls -->
+            <div class="pagination" style="margin-top: 20px; text-align: center;">
+                <?php if ($total_pages > 1): ?>
+                    <?php if ($page > 1): ?>
+                        <a href="?page=1<?php echo $date_filter ? '&date=' . urlencode($date_filter) : ''; ?><?php echo $status_filter ? '&status=' . urlencode($status_filter) : ''; ?>" class="w3-button w3-light-grey">&laquo; First</a>
+                        <a href="?page=<?php echo $page - 1; ?><?php echo $date_filter ? '&date=' . urlencode($date_filter) : ''; ?><?php echo $status_filter ? '&status=' . urlencode($status_filter) : ''; ?>" class="w3-button w3-light-grey">&lsaquo; Previous</a>
+                    <?php endif; ?>
+
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++):
+                    ?>
+                        <a href="?page=<?php echo $i; ?><?php echo $date_filter ? '&date=' . urlencode($date_filter) : ''; ?><?php echo $status_filter ? '&status=' . urlencode($status_filter) : ''; ?>" 
+                           class="w3-button <?php echo $i === $page ? 'w3-blue' : 'w3-light-grey'; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?page=<?php echo $page + 1; ?><?php echo $date_filter ? '&date=' . urlencode($date_filter) : ''; ?><?php echo $status_filter ? '&status=' . urlencode($status_filter) : ''; ?>" class="w3-button w3-light-grey">Next &rsaquo;</a>
+                        <a href="?page=<?php echo $total_pages; ?><?php echo $date_filter ? '&date=' . urlencode($date_filter) : ''; ?><?php echo $status_filter ? '&status=' . urlencode($status_filter) : ''; ?>" class="w3-button w3-light-grey">Last &raquo;</a>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
     <script>

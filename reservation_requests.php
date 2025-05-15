@@ -10,9 +10,14 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true || !isset($_
 
 // Handle approve/reject actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Debug logging
+    error_log("POST request received: " . print_r($_POST, true));
+    
     if (isset($_POST['action']) && isset($_POST['reservation_id'])) {
         $reservation_id = $_POST['reservation_id'];
         $action = $_POST['action'];
+        
+        error_log("Processing action: " . $action . " for reservation: " . $reservation_id);
         
         if ($action === 'approve' || $action === 'reject') {
             $status = ($action === 'approve') ? 'approved' : 'rejected';
@@ -33,11 +38,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Reservation not found");
                 }
 
-                // Update reservation status
-                $sql = "UPDATE reservations SET status = ? WHERE id = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("si", $status, $reservation_id);
-                $stmt->execute();
+                error_log("Reservation info: " . print_r($res_info, true));
+
+                // Update reservation status and rejection reason if provided
+                if ($action === 'reject') {
+                    if (!isset($_POST['rejection_reason']) || empty($_POST['rejection_reason'])) {
+                        throw new Exception("Rejection reason is required");
+                    }
+                    $rejection_reason = $_POST['rejection_reason'];
+                    $sql = "UPDATE reservations SET status = ?, rejection_reason = ? WHERE id = ?";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param("ssi", $status, $rejection_reason, $reservation_id);
+                    
+                    error_log("Executing rejection update with reason: " . $rejection_reason);
+                } else {
+                    $sql = "UPDATE reservations SET status = ? WHERE id = ?";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bind_param("si", $status, $reservation_id);
+                }
+                
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to update reservation status: " . $stmt->error);
+                }
+                
+                error_log("Status update successful");
                 
                 // If approved, update PC status to 'used'
                 if ($action === 'approve') {
@@ -58,25 +82,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Create notification (short and correct PC label)
                 $pc_label = (stripos($res_info['pc_number'], 'PC') === 0) ? $res_info['pc_number'] : 'PC' . $res_info['pc_number'];
-                $message = "Reservation for Room {$res_info['room_number']}, {$pc_label} on {$res_info['reservation_date']} ({$res_info['time_slot']}) " . ($status === 'approved' ? 'approved.' : 'rejected.');
+                $message = "Reservation for Room {$res_info['room_number']}, {$pc_label} on {$res_info['reservation_date']} ({$res_info['time_slot']}) " . 
+                    ($status === 'approved' ? 'approved.' : 'rejected.' . 
+                    ($status === 'rejected' && isset($_POST['rejection_reason']) ? " Reason: {$_POST['rejection_reason']}" : ''));
                 $notification_type = $status === 'approved' ? 'reservation_approved' : 'reservation_rejected';
-                createNotification($res_info['idno'], $notification_type, $message);
+                
+                // Create notification for user
+                createNotification($res_info['idno'], $notification_type, $message, 'user');
+                
+                // Create notification for admin
+                $admin_message = "Reservation for Room {$res_info['room_number']}, {$pc_label} on {$res_info['reservation_date']} ({$res_info['time_slot']}) has been " . 
+                    $status . ($status === 'rejected' && isset($_POST['rejection_reason']) ? ". Reason: {$_POST['rejection_reason']}" : '.');
+                createNotification(NULL, $notification_type, $admin_message, 'admin');
                 
                 // Commit transaction
                 $conn->commit();
-                $success_message = "Reservation " . ($action === 'approve' ? 'approved' : 'rejected') . " successfully!";
                 
-                // Redirect to current sit-in page if approved
+                // Set success message and redirect
+                $_SESSION['success'] = "Reservation has been " . $status;
+                
+                // Redirect to current sit-in page if approved, otherwise stay on reservation requests
                 if ($action === 'approve') {
                     header("Location: currentSitin.php");
-                    exit();
+                } else {
+                    header("Location: reservation_requests.php");
                 }
+                exit();
                 
-                $_SESSION['success'] = "Reservation has been " . $status;
             } catch (Exception $e) {
                 // Rollback transaction on error
                 $conn->rollback();
-                $error_message = "Error updating reservation status: " . $e->getMessage();
+                $_SESSION['error'] = "Error updating reservation status: " . $e->getMessage();
+                header("Location: reservation_requests.php");
+                exit();
             }
         }
     }
@@ -97,13 +135,28 @@ if (isset($_SESSION['user']['USERNAME'])) {
     }
 }
 
-// Fetch reservation requests (example query, adjust table/fields as needed)
+// Pagination settings
+$records_per_page = 10;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $records_per_page;
+
+// Get total count of pending reservations
+$count_query = "SELECT COUNT(*) as total FROM reservations r JOIN user u ON r.idno = u.IDNO WHERE r.status = 'pending'";
+$count_result = mysqli_query($conn, $count_query);
+$total_records = mysqli_fetch_assoc($count_result)['total'];
+$total_pages = ceil($total_records / $records_per_page);
+
+// Fetch reservation requests with pagination
 $query = "SELECT r.id, r.idno as student_id, CONCAT(u.FIRSTNAME, ' ', u.MIDDLENAME, ' ', u.LASTNAME) as name, r.room_number as room, r.pc_number as seat, CONCAT(r.reservation_date, ' ', SUBSTRING_INDEX(r.time_slot, '-', 1)) as datetime, r.purpose, r.status 
           FROM reservations r 
           JOIN user u ON r.idno = u.IDNO 
           WHERE r.status = 'pending' 
-          ORDER BY r.reservation_date ASC, r.time_slot ASC";
-$result = mysqli_query($conn, $query);
+          ORDER BY r.reservation_date ASC, r.time_slot ASC
+          LIMIT ? OFFSET ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("ii", $records_per_page, $offset);
+$stmt->execute();
+$result = $stmt->get_result();
 
 $reservations = [];
 while ($row = mysqli_fetch_assoc($result)) {
@@ -266,7 +319,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="reservation_id" value="<?= $res['id'] ?>">
                                         <button type="submit" name="action" value="approve" class="btn btn-approve"><i class="fa fa-check"></i>Approve</button>
-                                        <button type="submit" name="action" value="reject" class="btn btn-reject"><i class="fa fa-times"></i>Reject</button>
+                                        <button type="button" onclick="showRejectModal(<?= $res['id'] ?>)" class="btn btn-reject"><i class="fa fa-times"></i>Reject</button>
                                     </form>
                                 </td>
                             </tr>
@@ -274,6 +327,32 @@ while ($row = mysqli_fetch_assoc($result)) {
                     <?php endif; ?>
                 </tbody>
             </table>
+            <!-- Add pagination controls -->
+            <div class="pagination" style="margin-top: 20px; text-align: center;">
+                <?php if ($total_pages > 1): ?>
+                    <?php if ($page > 1): ?>
+                        <a href="?page=1" class="w3-button w3-light-grey">&laquo; First</a>
+                        <a href="?page=<?php echo $page - 1; ?>" class="w3-button w3-light-grey">&lsaquo; Previous</a>
+                    <?php endif; ?>
+
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++):
+                    ?>
+                        <a href="?page=<?php echo $i; ?>" 
+                           class="w3-button <?php echo $i === $page ? 'w3-blue' : 'w3-light-grey'; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?page=<?php echo $page + 1; ?>" class="w3-button w3-light-grey">Next &rsaquo;</a>
+                        <a href="?page=<?php echo $total_pages; ?>" class="w3-button w3-light-grey">Last &raquo;</a>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
     <script>
@@ -283,6 +362,49 @@ while ($row = mysqli_fetch_assoc($result)) {
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
         }
+    </script>
+    <!-- Rejection Reason Modal -->
+    <div id="rejectModal" class="w3-modal">
+        <div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:500px">
+            <div class="w3-container">
+                <span onclick="document.getElementById('rejectModal').style.display='none'" class="w3-button w3-display-topright">&times;</span>
+                <h3>Reject Reservation</h3>
+                <form method="POST" action="reservation_requests.php">
+                    <input type="hidden" name="reservation_id" id="reject_reservation_id">
+                    <input type="hidden" name="action" value="reject">
+                    <div class="w3-section">
+                        <label><b>Reason for Rejection</b></label>
+                        <textarea name="rejection_reason" class="w3-input w3-border w3-round" rows="4" required></textarea>
+                    </div>
+                    <div class="w3-section">
+                        <button type="submit" class="w3-button w3-red w3-round">Reject Reservation</button>
+                        <button type="button" onclick="document.getElementById('rejectModal').style.display='none'" class="w3-button w3-light-grey w3-round">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showRejectModal(reservationId) {
+        document.getElementById('reject_reservation_id').value = reservationId;
+        document.getElementById('rejectModal').style.display='block';
+    }
+
+    // Add error message display
+    <?php if (isset($_SESSION['error'])): ?>
+        alert('<?php echo $_SESSION['error']; ?>');
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
+    // Add success message display
+    <?php if (isset($_SESSION['success'])): ?>
+        alert('<?php echo $_SESSION['success']; ?>');
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    // Debug logging
+    console.log('Script loaded');
     </script>
 </body>
 </html> 

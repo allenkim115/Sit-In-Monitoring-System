@@ -1,5 +1,6 @@
 <?php
 include 'connect.php';
+include 'notification_functions.php';
 session_start();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: login.php');
@@ -163,6 +164,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
     $stmt_insert = $conn->prepare($sql_insert);
     $stmt_insert->bind_param("isssss", $idno, $room_number, $pc_number, $reservation_date, $time_slot, $purpose);
     if ($stmt_insert->execute()) {
+        // Create notification for user
+        $user_message = "Your reservation request for Room {$room_number}, {$pc_number} on {$reservation_date} ({$time_slot}) has been submitted and is pending approval.";
+        createNotification($idno, 'reservation_request', $user_message, 'user');
+
+        // Create notification for admin
+        $admin_message = "New Reservation request: Student {$idno}, Room {$room_number} {$pc_number}, {$reservation_date}, {$time_slot}.";
+        createNotification(NULL, 'reservation_request', $admin_message, 'admin');
+
         $success_message = "Reservation request submitted successfully! Please wait for approval.";
         error_log("Reservation accepted and inserted");
     } else {
@@ -629,12 +638,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                     <select name="purpose" class="w3-input w3-border w3-round" required>
                         <option value="" disabled selected hidden>Select Purpose</option>
                         <option value="C Programming">C Programming</option>
-                        <option value="C++ Programming">C++ Programming</option>
-                        <option value="Python Programming">Python Programming</option>
-                        <option value="PHP Programming">PHP Programming</option>
                         <option value="Java Programming">Java Programming</option>
-                        <option value=".Net Programming">ASP.Net Programming</option>
-                        <option value="Others">Others</option>
+                        <option value="C#">C#</option>
+                        <option value="PHP">PHP</option>
+                        <option value="ASP.Net">ASP.Net</option>
+                        <option value="Database">Database</option>
+                        <option value="Digital Logic & Design">Digital Logic & Design</option>
+                        <option value="Embedded System % IOT">Embedded System % IOT</option>
+                        <option value="Python Programming">Python Programming</option>
+                        <option value="Systems Integration & Architecture">Systems Integration & Architecture</option>
+                        <option value="Computer Application">Computer Application</option>
+                        <option value="Web Design & Development">Web Design & Development</option>
+                        <option value="Project Management">Project Management</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div class="w3-section">
@@ -648,6 +664,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
         <div class="w3-card-4 w3-round-xlarge" style="flex: 1 1 350px; min-width: 340px; background: #fff; padding: 24px; margin: 0; margin-right: 30px; box-sizing: border-box;">
             <h3 style="margin-bottom: 16px; color: #512da8;"><i class="fa-solid fa-list-check" style="margin-right: 8px;"></i>Reservation Requests</h3>
             <?php
+            // Pagination settings
+            $records_per_page = 5;
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $offset = ($page - 1) * $records_per_page;
+
             // Filtering
             $filter = isset($_GET['filter']) ? $_GET['filter'] : 'All';
             $idno = $user['IDNO'];
@@ -661,15 +682,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
             } else {
                 $filter_sql = "AND status IN ('pending','approved','rejected')";
             }
-            $sql_requests = "SELECT id, reservation_date, time_slot, room_number, pc_number, purpose, status FROM reservations WHERE idno = ? $filter_sql ORDER BY reservation_date DESC, time_slot DESC";
+
+            // Get total records for pagination
+            $sql_count = "SELECT COUNT(*) as total FROM reservations WHERE idno = ? $filter_sql";
+            $stmt_count = $conn->prepare($sql_count);
+            $stmt_count->bind_param("i", $idno);
+            $stmt_count->execute();
+            $total_records = $stmt_count->get_result()->fetch_assoc()['total'];
+            $total_pages = ceil($total_records / $records_per_page);
+
+            // Modified query with pagination
+            $sql_requests = "SELECT id, reservation_date, time_slot, room_number, pc_number, purpose, status, rejection_reason 
+                           FROM reservations 
+                           WHERE idno = ? $filter_sql 
+                           ORDER BY reservation_date DESC, time_slot DESC 
+                           LIMIT ? OFFSET ?";
             $stmt_requests = $conn->prepare($sql_requests);
-            $stmt_requests->bind_param("i", $idno);
+            $stmt_requests->bind_param("iii", $idno, $records_per_page, $offset);
             $stmt_requests->execute();
             $result_requests = $stmt_requests->get_result();
             ?>
             <div style="margin-bottom: 12px;">
                 <form method="get" style="display: flex; gap: 8px;">
                     <input type="hidden" name="room_number" value="<?php echo htmlspecialchars($selected_room); ?>">
+                    <input type="hidden" name="page" value="1">
                     <button type="submit" name="filter" value="All" class="w3-button w3-round <?php if($filter=='All') echo 'w3-purple'; else echo 'w3-light-grey'; ?>">All</button>
                     <button type="submit" name="filter" value="Pending" class="w3-button w3-round <?php if($filter=='Pending') echo 'w3-purple'; else echo 'w3-light-grey'; ?>">Pending</button>
                     <button type="submit" name="filter" value="Approved" class="w3-button w3-round <?php if($filter=='Approved') echo 'w3-purple'; else echo 'w3-light-grey'; ?>">Approved</button>
@@ -686,6 +722,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                         <th>PC</th>
                         <th>Purpose</th>
                         <th>Status</th>
+                        <th>Rejection Reason</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -705,6 +742,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                                 ?>
                                 <span style="color:<?php echo $color; ?>; font-weight:600;"> <?php echo $status; ?> </span>
                             </td>
+                            <td><?php echo $row['status'] === 'rejected' ? htmlspecialchars($row['rejection_reason']) : '-'; ?></td>
                             <td>
                                 <?php if ($row['status'] === 'pending'): ?>
                                     <form method="post" style="margin:0;">
@@ -716,11 +754,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_reservation'])
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="7" style="text-align:center; color:#757575;">No reservation requests found.</td></tr>
+                    <tr><td colspan="8" style="text-align:center; color:#757575;">No reservation requests found.</td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>
             </div>
+            <!-- Pagination Controls -->
+            <?php if ($total_pages > 1): ?>
+            <div class="w3-center" style="margin-top: 20px;">
+                <div class="w3-bar">
+                    <?php if ($page > 1): ?>
+                        <a href="?filter=<?php echo $filter; ?>&page=<?php echo ($page-1); ?>" class="w3-button w3-purple">&laquo;</a>
+                    <?php endif; ?>
+                    
+                    <?php
+                    $start_page = max(1, $page - 2);
+                    $end_page = min($total_pages, $page + 2);
+                    
+                    if ($start_page > 1) {
+                        echo '<a href="?filter=' . $filter . '&page=1" class="w3-button w3-purple">1</a>';
+                        if ($start_page > 2) {
+                            echo '<span class="w3-button w3-purple">...</span>';
+                        }
+                    }
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++) {
+                        if ($i == $page) {
+                            echo '<a href="?filter=' . $filter . '&page=' . $i . '" class="w3-button w3-deep-purple">' . $i . '</a>';
+                        } else {
+                            echo '<a href="?filter=' . $filter . '&page=' . $i . '" class="w3-button w3-purple">' . $i . '</a>';
+                        }
+                    }
+                    
+                    if ($end_page < $total_pages) {
+                        if ($end_page < $total_pages - 1) {
+                            echo '<span class="w3-button w3-purple">...</span>';
+                        }
+                        echo '<a href="?filter=' . $filter . '&page=' . $total_pages . '" class="w3-button w3-purple">' . $total_pages . '</a>';
+                    }
+                    ?>
+                    
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?filter=<?php echo $filter; ?>&page=<?php echo ($page+1); ?>" class="w3-button w3-purple">&raquo;</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

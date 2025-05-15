@@ -28,7 +28,10 @@ $stmt_session->execute();
 $result_session = $stmt_session->get_result()->fetch_assoc();
 
 // Get top 5 users by points
-$sql_leaderboard = "SELECT IDNO, FIRSTNAME, LASTNAME, POINTS FROM user ORDER BY POINTS DESC, FIRSTNAME ASC LIMIT 5";
+$sql_leaderboard = "SELECT u.IDNO, u.FIRSTNAME, u.LASTNAME, u.POINTS, 
+                    (SELECT COUNT(*) FROM sitin_records sr WHERE sr.IDNO = u.IDNO) as sitin_count 
+                    FROM user u 
+                    ORDER BY u.POINTS DESC, sitin_count DESC, u.FIRSTNAME ASC LIMIT 5";
 $result_leaderboard = $conn->query($sql_leaderboard);
 $leaderboard = [];
 if($result_leaderboard->num_rows > 0){
@@ -403,14 +406,14 @@ $unread_count = getUnreadNotificationCount($user['IDNO']);
                     <?php if (count($notifications) > 0): ?>
                         <?php foreach ($notifications as $notification): ?>
                             <?php
-                                $redirect_url = 'mark_notification_read.php?notification_id=' . $notification['id'];
+                                $redirect_url = '';
                                 $type = $notification['type'];
                                 
                                 if ($type === 'reservation_approved' || $type === 'reservation_rejected') {
-                                    $redirect_url .= '&redirect=' . urlencode('make_reservation.php?filter=' . ($type === 'reservation_approved' ? 'Approved' : 'Rejected'));
+                                    $redirect_url = 'make_reservation.php?filter=' . ($type === 'reservation_approved' ? 'Approved' : 'Rejected');
                                 }
                             ?>
-                            <a href="<?php echo $redirect_url; ?>" class="notif-item<?php echo !$notification['is_read'] ? ' notif-unread' : ''; ?>">
+                            <a href="javascript:void(0)" onclick="handleNotificationClick(<?php echo $notification['id']; ?>, '<?php echo $redirect_url; ?>')" class="notif-item<?php echo !$notification['is_read'] ? ' notif-unread' : ''; ?>">
                                 <?php
                                     $icon = '';
                                     switch($notification['type']) {
@@ -578,8 +581,10 @@ $unread_count = getUnreadNotificationCount($user['IDNO']);
                         <thead>
                             <tr>
                                 <th>Rank</th>
+                                <th>ID No</th>
                                 <th>Name</th>
                                 <th>Points</th>
+                                <th>Sit-ins</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -598,13 +603,15 @@ $unread_count = getUnreadNotificationCount($user['IDNO']);
                                     ?>
                                     <tr>
                                         <td><?php echo $index + 1; ?></td>
+                                        <td><?php echo htmlspecialchars($leader['IDNO']); ?></td>
                                         <td><?php echo $icon . ' ' . htmlspecialchars($leader['FIRSTNAME'] . ' ' . $leader['LASTNAME']); ?></td>
                                         <td><?php echo htmlspecialchars($leader['POINTS']); ?></td>
+                                        <td><?php echo htmlspecialchars($leader['sitin_count']); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="3">No leaderboard data available.</td>
+                                    <td colspan="5">No leaderboard data available.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -666,10 +673,6 @@ $unread_count = getUnreadNotificationCount($user['IDNO']);
             <button type="button" class="allnotif-close" onclick="document.getElementById('allNotifications').style.display='none'">&times;</button>
         </header>
         <div class="w3-container w3-padding">
-            <div class="w3-panel w3-light-gray w3-leftbar w3-border-purple" style="background: #f7f3fa;">
-                <p><strong>Total Notifications:</strong> <?php echo count($notifications); ?></p>
-                <p><strong>Unread Notifications:</strong> <?php echo $unread_count; ?></p>
-            </div>
             <hr class="divider">
             <div class="notif-list" style="max-height: 400px; overflow-y: auto;">
                 <?php
@@ -744,6 +747,42 @@ $unread_count = getUnreadNotificationCount($user['IDNO']);
             dropdown.style.display = 'none';
         });
     });
+
+    function handleNotificationClick(notificationId, redirectUrl) {
+        // Mark notification as read using AJAX
+        fetch('mark_notification_read.php?notification_id=' + notificationId, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove unread styling
+                const notification = document.querySelector(`[onclick*="${notificationId}"]`);
+                if (notification) {
+                    notification.classList.remove('notif-unread');
+                }
+                
+                // Update unread count
+                const badge = document.querySelector('.notif-badge');
+                if (badge) {
+                    const currentCount = parseInt(badge.textContent);
+                    if (currentCount > 1) {
+                        badge.textContent = currentCount - 1;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+
+                // Redirect if there's a URL
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
 </script>
 </body>
 </html>

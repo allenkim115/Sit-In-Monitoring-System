@@ -21,37 +21,66 @@ $user = $result_profile->fetch_assoc();
 // Initialize search term
 $search_term = "";
 
-// Base SQL query
-$sql_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
+// Base SQL query for direct sit-ins
+$sql_direct_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT
                FROM sitin_records sr
-               JOIN user u ON sr.IDNO = u.IDNO";
+               JOIN user u ON sr.IDNO = u.IDNO
+               WHERE NOT EXISTS (
+                   SELECT 1 FROM reservations r 
+                   WHERE r.idno = sr.IDNO 
+                   AND r.room_number = sr.LABORATORY 
+                   AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+                   AND r.status = 'approved'
+               )";
+
+// Base SQL query for reserved sit-ins
+$sql_reserved_sitins = "SELECT sr.ID, u.IDNO, CONCAT(u.FIRSTNAME, ' ', u.LASTNAME) AS Name, sr.PURPOSE, sr.LABORATORY, sr.TIME_IN, sr.TIME_OUT,
+                        r.reservation_date, r.time_slot
+                        FROM sitin_records sr
+                        JOIN user u ON sr.IDNO = u.IDNO
+                        JOIN reservations r ON r.idno = sr.IDNO 
+                            AND r.room_number = sr.LABORATORY 
+                            AND DATE(r.reservation_date) = DATE(sr.TIME_IN)
+                            AND r.status = 'approved'";
 
 // Check if search term is submitted
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search_term = mysqli_real_escape_string($conn, $_GET['search']);
-    // Search by IDNO or name (FIRSTNAME, MIDDLENAME, LASTNAME) while maintaining today's date filter
-    $sql_sitins .= " WHERE (DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE()))
-                    AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    // Search by IDNO or name while maintaining today's date filter
+    $search_condition = " AND (u.IDNO LIKE '%$search_term%' OR u.FIRSTNAME LIKE '%$search_term%' OR u.LASTNAME LIKE '%$search_term%')";
+    $date_condition = " AND (DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE()))";
+    
+    $sql_direct_sitins .= $date_condition . $search_condition;
+    $sql_reserved_sitins .= " WHERE " . substr($date_condition, 5) . $search_condition;
 } else {
     // Default: show today's records
-    $sql_sitins .= " WHERE DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE())";
+    $date_condition = " AND (DATE(sr.TIME_IN) = CURDATE() OR (sr.TIME_OUT IS NOT NULL AND DATE(sr.TIME_OUT) = CURDATE()))";
+    $sql_direct_sitins .= $date_condition;
+    $sql_reserved_sitins .= " WHERE " . substr($date_condition, 5);
 }
 
 // Add order by clause
-$sql_sitins .= " ORDER BY sr.TIME_IN DESC";
+$sql_direct_sitins .= " ORDER BY sr.TIME_IN DESC";
+$sql_reserved_sitins .= " ORDER BY sr.TIME_IN DESC";
 
-// Prepare and execute the query
-$stmt_sitins = $conn->prepare($sql_sitins);
-$stmt_sitins->execute();
-$result_sitins = $stmt_sitins->get_result();
+// Execute the queries
+$result_direct_sitins = $conn->query($sql_direct_sitins);
+$result_reserved_sitins = $conn->query($sql_reserved_sitins);
 
-$sitin_records = [];
-if ($result_sitins->num_rows > 0) {
-    while ($row = $result_sitins->fetch_assoc()) {
-        $sitin_records[] = $row;
+$direct_sitin_records = [];
+$reserved_sitin_records = [];
+
+if ($result_direct_sitins->num_rows > 0) {
+    while ($row = $result_direct_sitins->fetch_assoc()) {
+        $direct_sitin_records[] = $row;
     }
 }
-$stmt_sitins->close();
+
+if ($result_reserved_sitins->num_rows > 0) {
+    while ($row = $result_reserved_sitins->fetch_assoc()) {
+        $reserved_sitin_records[] = $row;
+    }
+}
 
 // Get purpose statistics for today only
 $sql_purpose_stats = "SELECT PURPOSE, COUNT(*) as count FROM sitin_records 
@@ -60,13 +89,38 @@ $sql_purpose_stats = "SELECT PURPOSE, COUNT(*) as count FROM sitin_records
 $result_purpose_stats = $conn->query($sql_purpose_stats);
 $purpose_labels = [];
 $purpose_data = [];
-
+$purpose_stats = [];
 if ($result_purpose_stats->num_rows > 0) {
     while ($row = $result_purpose_stats->fetch_assoc()) {
-        $purpose_labels[] = $row['PURPOSE'];
-        $purpose_data[] = $row['count'];
+        $purpose_stats[$row['PURPOSE']] = $row['count'];
     }
 }
+// Ensure all purposes are present, even if zero
+$all_purposes = [
+    "C Programming",
+    "Java Programming",
+    "C#",
+    "PHP",
+    "ASP.Net",
+    "Database",
+    "Digital Logic & Design",
+    "Embedded System % IOT",
+    "Python Programming",
+    "Systems Integration & Architecture",
+    "Computer Application",
+    "Web Design & Development",
+    "Project Management",
+    "Other"
+];
+foreach ($all_purposes as $purpose) {
+    if (!isset($purpose_stats[$purpose])) {
+        $purpose_stats[$purpose] = 0;
+    }
+}
+// Keep the order
+$purpose_stats = array_replace(array_flip($all_purposes), $purpose_stats);
+$purpose_labels = array_keys($purpose_stats);
+$purpose_data = array_values($purpose_stats);
 
 // Get laboratory statistics for today only
 $sql_lab_stats = "SELECT LABORATORY, COUNT(*) as count FROM sitin_records 
@@ -180,23 +234,31 @@ include 'search_modal.php';
                 <a href="currentSitin.php" class="w3-button w3-purple w3-round-large w3-margin-bottom">View Current Sit-in</a>
             </div>
             </div> 
-            <h2 class="w3-margin-bottom">Current Sit-in Records</h2>
-            <table class="sitin-table">
-                <thead id="sitinTable">
-                    <tr>
-                        <th>Sit-in No.</th>
-                        <th>IDNO</th>
-                        <th>Name</th>
-                        <th>Purpose</th>
-                        <th>Laboratory</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody id="sitinTableBody">
-                    <?php if (count($sitin_records) > 0) : ?>
-                        <?php foreach ($sitin_records as $record) : ?>
+            <!-- Tab Navigation -->
+            <div class="w3-bar w3-light-grey w3-round-large">
+                <button class="w3-bar-item w3-button <?php echo (!isset($_GET['active_tab']) || $_GET['active_tab'] === 'Direct') ? 'w3-purple' : ''; ?>" onclick="openTab('Direct')">Direct Sit-ins</button>
+                <button class="w3-bar-item w3-button <?php echo (isset($_GET['active_tab']) && $_GET['active_tab'] === 'Reserved') ? 'w3-purple' : ''; ?>" onclick="openTab('Reserved')">Reserved Sit-ins</button>
+            </div>
+
+            <!-- Direct Sit-ins Tab -->
+            <div id="Direct" class="w3-container tab" style="display:<?php echo (!isset($_GET['active_tab']) || $_GET['active_tab'] === 'Direct') ? 'block' : 'none'; ?>">
+                <h2 class="w3-margin-bottom">Direct Sit-ins</h2>            
+                <table class="sitin-table">
+                    <thead>
+                        <tr>
+                            <th>Sit-in No.</th>
+                            <th>IDNO</th>
+                            <th>Name</th>
+                            <th>Purpose</th>
+                            <th>Laboratory</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (count($direct_sitin_records) > 0) : ?>
+                        <?php foreach ($direct_sitin_records as $record) : ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($record['ID']); ?></td>
                                 <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
@@ -210,11 +272,53 @@ include 'search_modal.php';
                         <?php endforeach; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="8">No sit-in records found for today.</td>
+                            <td colspan="8">No direct sit-in records found for today.</td>
                         </tr>
                     <?php endif; ?>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reserved Sit-ins Tab -->
+            <div id="Reserved" class="w3-container tab" style="display:<?php echo (isset($_GET['active_tab']) && $_GET['active_tab'] === 'Reserved') ? 'block' : 'none'; ?>">
+                <h2 class="w3-margin-bottom">Reserved Sit-ins</h2>            
+                <table class="sitin-table">
+                    <thead>
+                        <tr>
+                            <th>Sit-in No.</th>
+                            <th>IDNO</th>
+                            <th>Name</th>
+                            <th>Purpose</th>
+                            <th>Laboratory</th>
+                            <th>Time In</th>
+                            <th>Time Out</th>
+                            <th>Reserved Time</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (count($reserved_sitin_records) > 0) : ?>
+                        <?php foreach ($reserved_sitin_records as $record) : ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($record['ID']); ?></td>
+                                <td><?php echo htmlspecialchars($record['IDNO']); ?></td>
+                                <td><?php echo htmlspecialchars($record['Name']); ?></td>
+                                <td><?php echo htmlspecialchars($record['PURPOSE']); ?></td>
+                                <td><?php echo htmlspecialchars($record['LABORATORY']); ?></td>
+                                <td><?php echo date("g:i a", strtotime($record['TIME_IN'])); ?></td>
+                                <td><?php echo $record['TIME_OUT'] ? date("g:i a", strtotime($record['TIME_OUT'])) : 'Still Sitting-in'; ?></td>
+                                <td><?php echo $record['time_slot']; ?></td>
+                                <td><?php echo date("Y-m-d", strtotime($record['TIME_IN'])); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr>
+                            <td colspan="9">No reserved sit-in records found for today.</td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -225,6 +329,25 @@ include 'search_modal.php';
 
         function w3_close() {
             document.getElementById("mySidebar").style.display = "none";
+        }
+
+        function openTab(tabName) {
+            var i;
+            var x = document.getElementsByClassName("tab");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            document.getElementById(tabName).style.display = "block";
+            
+            // Update tab button styles
+            var buttons = document.getElementsByClassName("w3-bar-item");
+            for (i = 0; i < buttons.length; i++) {
+                buttons[i].className = buttons[i].className.replace(" w3-purple", "");
+            }
+            event.currentTarget.className += " w3-purple";
+
+            // Update hidden input value
+            document.getElementById('active_tab_input').value = tabName;
         }
         
         // Purpose Chart
@@ -237,12 +360,20 @@ include 'search_modal.php';
                     label: 'Sit-in Purposes',
                     data: <?php echo json_encode($purpose_data); ?>,
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.7)',
-                        'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)',
-                        'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)',
-                        'rgba(255, 159, 64, 0.7)'
+                        'rgba(255, 99, 132, 0.8)',   // 1
+                        'rgba(54, 162, 235, 0.8)',   // 2
+                        'rgba(255, 206, 86, 0.8)',   // 3
+                        'rgba(75, 192, 192, 0.8)',   // 4
+                        'rgba(153, 102, 255, 0.8)',  // 5
+                        'rgba(255, 159, 64, 0.8)',   // 6
+                        'rgba(255, 205, 210, 0.8)',  // 7
+                        'rgba(100, 181, 246, 0.8)',  // 8
+                        'rgba(174, 213, 129, 0.8)',  // 9
+                        'rgba(255, 245, 157, 0.8)',  // 10
+                        'rgba(129, 212, 250, 0.8)',  // 11
+                        'rgba(244, 143, 177, 0.8)',  // 12
+                        'rgba(255, 224, 178, 0.8)',  // 13
+                        'rgba(197, 202, 233, 0.8)'   // 14
                     ],
                     borderColor: [
                         'rgba(255, 99, 132, 1)',
@@ -250,7 +381,15 @@ include 'search_modal.php';
                         'rgba(255, 206, 86, 1)',
                         'rgba(75, 192, 192, 1)',
                         'rgba(153, 102, 255, 1)',
-                        'rgba(255, 159, 64, 1)'
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 205, 210, 1)',
+                        'rgba(100, 181, 246, 1)',
+                        'rgba(174, 213, 129, 1)',
+                        'rgba(255, 245, 157, 1)',
+                        'rgba(129, 212, 250, 1)',
+                        'rgba(244, 143, 177, 1)',
+                        'rgba(255, 224, 178, 1)',
+                        'rgba(197, 202, 233, 1)'
                     ],
                     borderWidth: 1
                 }]
