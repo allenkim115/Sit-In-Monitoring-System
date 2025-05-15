@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 14, 2025 at 09:40 PM
+-- Generation Time: May 15, 2025 at 08:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -85,7 +85,8 @@ INSERT INTO `feedback` (`ID`, `SITIN_RECORD_ID`, `STUDENT_ID`, `RATING`, `COMMEN
 (2, 38, '2000', 1, 'meh', '2025-04-07 16:44:49'),
 (3, 40, '20951505', 5, 'good experience', '2025-04-07 16:45:32'),
 (4, 39, '20951505', 1, 'rude', '2025-04-07 16:47:04'),
-(5, 45, '3000', 5, 'Nicee', '2025-04-09 15:30:27');
+(5, 45, '3000', 5, 'Nicee', '2025-04-09 15:30:27'),
+(6, 70, '2000', 5, 'Nice!!', '2025-05-15 16:20:35');
 
 -- --------------------------------------------------------
 
@@ -110,7 +111,9 @@ CREATE TABLE `lab_resources` (
 INSERT INTO `lab_resources` (`id`, `title`, `description`, `category`, `resource_link`, `file_path`, `created_at`) VALUES
 (1, 'Introduction to Programming', 'A beginner friendly tutorial on C programming', 'Programming', 'https://www.youtube.com/watch?v=87SH2Cn0s9A', NULL, '2025-05-06 02:09:09'),
 (2, 'Test', 'test123', 'Database', '', 'uploads/res_681903c4adae0.xlsx', '2025-05-06 02:30:28'),
-(3, 'Configure SSH', 'asdsdads', 'Networking', '', 'uploads/res_6819043d9d630.pka', '2025-05-06 02:32:29');
+(3, 'Configure SSH', 'asdsdads', 'Networking', '', 'uploads/res_6819043d9d630.pka', '2025-05-06 02:32:29'),
+(4, 'Introduction to Web Development', 'Tutorial on Web Development', 'Programming', 'https://web.dev/learn/', NULL, '2025-05-15 22:26:00'),
+(5, 'Test', 'sdas', 'Programming', 'https://www.facebook.com/', NULL, '2025-05-16 00:22:28');
 
 -- --------------------------------------------------------
 
@@ -154,7 +157,7 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 (21, '524', 'Friday', '10:30AM-12:00PM', 'Available'),
 (22, '524', 'Friday', '12:00PM-1:00PM', 'Available'),
 (23, '524', 'Friday', '1:00PM-3:00PM', 'Occupied'),
-(24, '524', 'Friday', '3:00PM-4:30PM', 'Available'),
+(24, '524', 'Friday', '3:00PM-4:30PM', 'Occupied'),
 (25, '524', 'Friday', '4:30PM-6:00PM', 'Available'),
 (26, '524', 'Friday', '6:00PM-7:30PM', 'Available'),
 (27, '524', 'Friday', '7:30PM-9:00PM', 'Available'),
@@ -169,7 +172,7 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 (36, '524', 'Saturday', '7:30PM-9:00PM', 'Available'),
 (37, '526', 'Monday/Wednesday', '7:30AM-9:00AM', 'Available'),
 (38, '526', 'Monday/Wednesday', '9:00AM-10:30AM', 'Available'),
-(39, '526', 'Monday/Wednesday', '10:30AM-12:00PM', 'Available'),
+(39, '526', 'Monday/Wednesday', '10:30AM-12:00PM', 'Occupied'),
 (40, '526', 'Monday/Wednesday', '12:00PM-1:00PM', 'Available'),
 (41, '526', 'Monday/Wednesday', '1:00PM-3:00PM', 'Available'),
 (42, '526', 'Monday/Wednesday', '3:00PM-4:30PM', 'Available'),
@@ -236,7 +239,7 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 (103, '528', 'Saturday', '12:00PM-1:00PM', 'Available'),
 (104, '528', 'Saturday', '1:00PM-3:00PM', 'Available'),
 (105, '528', 'Saturday', '3:00PM-4:30PM', 'Available'),
-(106, '528', 'Saturday', '4:30PM-6:00PM', 'Available'),
+(106, '528', 'Saturday', '4:30PM-6:00PM', 'Occupied'),
 (107, '528', 'Saturday', '6:00PM-7:30PM', 'Available'),
 (108, '528', 'Saturday', '7:30PM-9:00PM', 'Available'),
 (109, '530', 'Monday/Wednesday', '7:30AM-9:00AM', 'Available'),
@@ -356,7 +359,8 @@ INSERT INTO `lab_schedule` (`id`, `lab_room`, `day_of_week`, `time_slot`, `statu
 
 CREATE TABLE `notifications` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `recipient_type` enum('user','admin') NOT NULL DEFAULT 'user',
   `type` enum('reservation_approved','reservation_rejected','reward_received') NOT NULL,
   `message` text NOT NULL,
   `is_read` tinyint(1) NOT NULL DEFAULT 0,
@@ -367,10 +371,52 @@ CREATE TABLE `notifications` (
 -- Dumping data for table `notifications`
 --
 
-INSERT INTO `notifications` (`id`, `user_id`, `type`, `message`, `is_read`, `created_at`) VALUES
-(1, 2000, 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 8)', 0, '2025-05-14 19:01:27'),
-(3, 2000, 'reservation_approved', 'Reservation for Room 524, PC7 on 2025-05-20 (7:30AM-9:00AM) approved.', 0, '2025-05-14 19:08:32'),
-(4, 20951505, 'reservation_rejected', 'Reservation for Room 524, PC8 on 2025-05-20 (7:30AM-9:00AM) rejected.', 1, '2025-05-14 19:11:31');
+INSERT INTO `notifications` (`id`, `user_id`, `recipient_type`, `type`, `message`, `is_read`, `created_at`) VALUES
+(38, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 530, PC11 on 2025-05-17 (7:30PM-9:00PM) has been rejected.', 1, '2025-05-15 12:56:15'),
+(39, 19894948, 'user', 'reservation_approved', 'Reservation for Room 544, PC15 on 2025-05-21 (6:00PM-7:30PM) approved.', 1, '2025-05-15 12:56:16'),
+(40, NULL, 'admin', 'reservation_approved', 'Reservation for Room 544, PC15 on 2025-05-21 (6:00PM-7:30PM) has been approved.', 1, '2025-05-15 12:56:16'),
+(41, 19894948, 'user', 'reservation_rejected', 'Reservation for Room 524, PC17 on 2025-05-24 (7:30PM-9:00PM) rejected.', 1, '2025-05-15 12:56:19'),
+(42, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 524, PC17 on 2025-05-24 (7:30PM-9:00PM) has been rejected.', 1, '2025-05-15 12:56:19'),
+(43, 22651798, 'user', 'reservation_rejected', 'Reservation for Room 524, PC20 on 2025-05-24 (6:00PM-7:30PM) rejected.', 1, '2025-05-15 12:56:20'),
+(44, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 524, PC20 on 2025-05-24 (6:00PM-7:30PM) has been rejected.', 1, '2025-05-15 12:56:20'),
+(45, 22651798, 'user', '', 'Your reservation request for Room 524, PC20 on 2025-05-17 (6:00PM-7:30PM) has been submitted and is pending approval.', 1, '2025-05-15 12:59:10'),
+(47, 22651798, 'user', '', 'Your reservation request for Room 524, PC20 on 2025-05-19 (6:00PM-7:30PM) has been submitted and is pending approval.', 1, '2025-05-15 12:59:37'),
+(48, NULL, 'admin', '', 'New Reservation request: Student 22651798, Room 524 PC20, 2025-05-19, 6:00PM-7:30PM.', 1, '2025-05-15 12:59:37'),
+(49, 22651798, 'user', '', 'Your reservation request for Room 526, PC19 on 2025-05-21 (7:30PM-9:00PM) has been submitted and is pending approval.', 1, '2025-05-15 13:02:44'),
+(50, NULL, 'admin', '', 'New Reservation request: Student 22651798, Room 526 PC19, 2025-05-21, 7:30PM-9:00PM.', 1, '2025-05-15 13:02:44'),
+(51, 22651798, 'user', 'reservation_rejected', 'Reservation for Room 524, PC20 on 2025-05-17 (6:00PM-7:30PM) rejected. Reason: lab under maintenance', 1, '2025-05-15 13:13:40'),
+(52, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 524, PC20 on 2025-05-17 (6:00PM-7:30PM) has been rejected. Reason: lab under maintenance', 1, '2025-05-15 13:13:40'),
+(53, 19894948, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 2)', 1, '2025-05-15 13:21:43'),
+(54, 2000, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 9)', 1, '2025-05-15 13:21:45'),
+(55, 2000, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 10)', 1, '2025-05-15 13:21:46'),
+(56, 2000, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 11)', 1, '2025-05-15 13:21:48'),
+(57, 19894948, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 3)', 1, '2025-05-15 13:21:50'),
+(58, 2000, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 12)', 1, '2025-05-15 13:21:51'),
+(59, 22651798, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 1)', 1, '2025-05-15 13:31:22'),
+(60, 2000, 'user', 'reward_received', 'You have successfully converted 6 points into 2 sessions.', 1, '2025-05-15 13:34:04'),
+(61, 22651798, 'user', 'reservation_approved', 'Reservation for Room 526, PC19 on 2025-05-21 (7:30PM-9:00PM) approved.', 0, '2025-05-15 13:41:59'),
+(62, NULL, 'admin', 'reservation_approved', 'Reservation for Room 526, PC19 on 2025-05-21 (7:30PM-9:00PM) has been approved.', 1, '2025-05-15 13:41:59'),
+(65, 2000, 'user', '', 'Your reservation request for Room 524, PC20 on 2025-05-16 (12:00PM-1:00PM) has been submitted and is pending approval.', 1, '2025-05-15 13:51:33'),
+(66, NULL, 'admin', '', 'New Reservation request: Student 2000, Room 524 PC20, 2025-05-16, 12:00PM-1:00PM.', 1, '2025-05-15 13:51:33'),
+(67, 2000, 'user', 'reservation_approved', 'Reservation for Room 524, PC20 on 2025-05-16 (12:00PM-1:00PM) approved.', 1, '2025-05-15 13:51:45'),
+(68, NULL, 'admin', 'reservation_approved', 'Reservation for Room 524, PC20 on 2025-05-16 (12:00PM-1:00PM) has been approved.', 1, '2025-05-15 13:51:45'),
+(69, 22651798, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 2)', 0, '2025-05-15 14:07:30'),
+(70, 19894948, 'user', '', 'Your reservation request for Room 530, PC12 on 2025-05-17 (4:30PM-6:00PM) has been submitted and is pending approval.', 1, '2025-05-15 14:27:30'),
+(72, 19894948, 'user', 'reservation_rejected', 'Reservation for Room 530, PC12 on 2025-05-17 (4:30PM-6:00PM) rejected. Reason: There is an activity in lab', 1, '2025-05-15 14:28:27'),
+(73, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 530, PC12 on 2025-05-17 (4:30PM-6:00PM) has been rejected. Reason: There is an activity in lab', 1, '2025-05-15 14:28:27'),
+(74, 2000, 'user', '', 'Your reservation request for Room 526, PC11 on 2025-05-30 (12:00PM-1:00PM) has been submitted and is pending approval.', 1, '2025-05-15 16:18:18'),
+(76, 19894948, 'user', '', 'Your reservation request for Room 530, PC11 on 2025-05-30 (4:30PM-6:00PM) has been submitted and is pending approval.', 1, '2025-05-15 16:43:32'),
+(78, 19894948, 'user', '', 'Your reservation request for Room 544, PC23 on 2025-05-31 (4:30PM-6:00PM) has been submitted and is pending approval.', 1, '2025-05-15 16:56:50'),
+(81, NULL, 'admin', '', 'New Reservation request: Student 2000, Room 524 PC20, 2025-05-31, 4:30PM-6:00PM.', 1, '2025-05-15 17:03:03'),
+(82, 22651798, 'user', '', 'Your reservation request for Room 530, PC22 on 2025-05-24 (4:30PM-6:00PM) has been submitted and is pending approval.', 0, '2025-05-15 17:05:15'),
+(83, NULL, 'admin', '', 'New Reservation request: Student 22651798, Room 530 PC22, 2025-05-24, 4:30PM-6:00PM.', 1, '2025-05-15 17:05:15'),
+(84, 19894948, 'user', '', 'Your reservation request for Room 544, PC18 on 2025-05-24 (6:00PM-7:30PM) has been submitted and is pending approval.', 1, '2025-05-15 17:09:11'),
+(88, 20951505, 'user', '', 'Your reservation request for Room 530, PC20 on 2025-06-02 (3:00PM-4:30PM) has been submitted and is pending approval.', 1, '2025-05-15 17:14:36'),
+(90, 20951505, 'user', 'reservation_rejected', 'Reservation for Room 530, PC20 on 2025-06-02 (3:00PM-4:30PM) rejected. Reason: skill test on that day', 1, '2025-05-15 17:14:56'),
+(91, NULL, 'admin', 'reservation_rejected', 'Reservation for Room 530, PC20 on 2025-06-02 (3:00PM-4:30PM) has been rejected. Reason: skill test on that day', 1, '2025-05-15 17:14:56'),
+(92, 2000, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 7)', 1, '2025-05-15 17:55:54'),
+(93, 22651798, 'user', 'reward_received', 'You have earned 1 point for your sit-in session! (Total points: 3)', 0, '2025-05-15 17:55:57'),
+(94, 3000, 'user', 'reward_received', 'You have successfully converted 3 points into 1 sessions.', 0, '2025-05-15 17:57:09');
 
 -- --------------------------------------------------------
 
@@ -391,7 +437,7 @@ CREATE TABLE `pc_status` (
 --
 
 INSERT INTO `pc_status` (`id`, `pc_number`, `room_number`, `status`, `last_updated`) VALUES
-(1, 'PC1', 'Room 524', 'available', '2025-05-07 17:19:33'),
+(1, 'PC1', 'Room 524', 'maintenance', '2025-05-15 14:28:53'),
 (2, 'PC2', 'Room 524', 'maintenance', '2025-05-08 04:39:44'),
 (3, 'PC3', 'Room 524', 'available', '2025-05-07 17:19:33'),
 (4, 'PC4', 'Room 524', 'available', '2025-05-07 17:19:33'),
@@ -661,9 +707,6 @@ INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservati
 (11, 2000, '524', 'PC6', '2025-05-09', '9:00AM-10:30AM', 'C Programming', 'approved', NULL, '2025-05-08 06:18:04', '2025-05-08 06:18:28'),
 (12, 2000, '524', 'PC8', '2025-05-09', '9:00AM-10:30AM', 'Java Programming', 'approved', NULL, '2025-05-08 06:48:13', '2025-05-08 07:13:39'),
 (13, 20951505, '524', 'PC7', '2025-05-09', '9:00AM-10:30AM', 'Python Programming', 'approved', NULL, '2025-05-08 07:12:58', '2025-05-08 07:13:40'),
-(14, 2000, '524', 'PC9', '2025-05-09', '9:00AM-10:30AM', 'C++ Programming', 'rejected', NULL, '2025-05-08 07:14:04', '2025-05-08 07:14:28'),
-(15, 2000, '524', 'PC1', '2025-05-09', '7:30AM-9:00AM', 'C Programming', '', NULL, '2025-05-08 07:22:34', '2025-05-08 07:22:58'),
-(16, 20951505, '530', 'PC20', '2025-05-09', '1:00PM-3:00PM', '.Net Programming', 'rejected', NULL, '2025-05-08 08:07:31', '2025-05-14 18:20:39'),
 (17, 2000, '524', 'PC9', '2025-05-16', '7:30AM-9:00AM', 'Python Programming', 'approved', NULL, '2025-05-14 15:19:12', '2025-05-14 18:17:47'),
 (18, 2000, '526', 'PC1', '2025-05-19', '7:30AM-9:00AM', 'C++ Programming', 'approved', NULL, '2025-05-14 15:21:03', '2025-05-14 18:19:53'),
 (19, 20951505, '526', 'PC10', '2025-05-16', '10:30AM-12:00PM', 'PHP Programming', 'approved', NULL, '2025-05-14 18:21:18', '2025-05-14 18:22:06'),
@@ -671,7 +714,23 @@ INSERT INTO `reservations` (`id`, `idno`, `room_number`, `pc_number`, `reservati
 (21, 2000, '544', 'PC5', '2025-05-20', '12:00PM-1:00PM', 'PHP Programming', 'approved', NULL, '2025-05-14 18:27:27', '2025-05-14 18:27:40'),
 (22, 2000, '530', 'PC6', '2025-05-17', '12:00PM-1:00PM', 'C++ Programming', 'approved', NULL, '2025-05-14 19:05:23', '2025-05-14 19:06:36'),
 (23, 2000, '524', 'PC7', '2025-05-20', '7:30AM-9:00AM', 'C Programming', 'approved', NULL, '2025-05-14 19:08:21', '2025-05-14 19:08:32'),
-(24, 20951505, '524', 'PC8', '2025-05-20', '7:30AM-9:00AM', 'Python Programming', 'rejected', NULL, '2025-05-14 19:09:51', '2025-05-14 19:11:31');
+(25, 2000, '524', 'PC10', '2025-05-19', '10:30AM-12:00PM', 'PHP Programming', 'approved', NULL, '2025-05-15 11:42:51', '2025-05-15 11:43:08'),
+(29, 2000, '524', 'PC15', '2025-05-16', '9:00AM-10:30AM', 'Python Programming', 'approved', NULL, '2025-05-15 12:08:32', '2025-05-15 12:08:57'),
+(34, 19894948, '524', 'PC13', '2025-05-17', '6:00PM-7:30PM', 'PHP Programming', 'approved', NULL, '2025-05-15 12:33:09', '2025-05-15 12:56:11'),
+(35, 19894948, '544', 'PC15', '2025-05-21', '6:00PM-7:30PM', 'Java Programming', 'approved', NULL, '2025-05-15 12:36:03', '2025-05-15 12:56:16'),
+(40, 22651798, '524', 'PC20', '2025-05-17', '6:00PM-7:30PM', 'Others', 'rejected', 'lab under maintenance', '2025-05-15 12:59:10', '2025-05-15 13:13:40'),
+(41, 22651798, '524', 'PC20', '2025-05-19', '6:00PM-7:30PM', '.Net Programming', 'rejected', 'under maintenance', '2025-05-15 12:59:37', '2025-05-15 16:40:13'),
+(42, 22651798, '526', 'PC19', '2025-05-21', '7:30PM-9:00PM', 'Python Programming', 'approved', NULL, '2025-05-15 13:02:44', '2025-05-15 13:41:59'),
+(44, 2000, '524', 'PC20', '2025-05-16', '12:00PM-1:00PM', '.Net Programming', 'approved', NULL, '2025-05-15 13:51:33', '2025-05-15 13:51:45'),
+(45, 19894948, '530', 'PC12', '2025-05-17', '4:30PM-6:00PM', 'PHP Programming', 'rejected', 'There is an activity in lab', '2025-05-15 14:27:30', '2025-05-15 14:28:27'),
+(46, 2000, '526', 'PC11', '2025-05-30', '12:00PM-1:00PM', 'PHP', 'approved', NULL, '2025-05-15 16:18:18', '2025-05-15 16:40:16'),
+(47, 19894948, '530', 'PC11', '2025-05-30', '4:30PM-6:00PM', 'PHP', 'rejected', 'Activity in the lab ', '2025-05-15 16:43:32', '2025-05-15 16:44:17'),
+(48, 19894948, '544', 'PC23', '2025-05-31', '4:30PM-6:00PM', 'Database', 'rejected', 'asd', '2025-05-15 16:56:50', '2025-05-15 17:07:01'),
+(49, 2000, '524', 'PC20', '2025-05-31', '4:30PM-6:00PM', 'ASP.Net', 'rejected', 'maintenance', '2025-05-15 17:03:03', '2025-05-15 17:03:32'),
+(50, 22651798, '530', 'PC22', '2025-05-24', '4:30PM-6:00PM', 'Database', 'rejected', 'holiday', '2025-05-15 17:05:15', '2025-05-15 17:05:36'),
+(51, 19894948, '544', 'PC18', '2025-05-24', '6:00PM-7:30PM', 'Digital Logic & Design', 'rejected', 'sdas', '2025-05-15 17:09:11', '2025-05-15 17:09:28'),
+(52, 2000, '530', 'PC19', '2025-06-02', '6:00PM-7:30PM', 'Digital Logic & Design', 'rejected', 'skill test on that day', '2025-05-15 17:11:23', '2025-05-15 17:11:46'),
+(53, 20951505, '530', 'PC20', '2025-06-02', '3:00PM-4:30PM', 'Python Programming', 'rejected', 'skill test on that day', '2025-05-15 17:14:36', '2025-05-15 17:14:56');
 
 -- --------------------------------------------------------
 
@@ -744,8 +803,19 @@ INSERT INTO `sitin_records` (`ID`, `IDNO`, `PURPOSE`, `LABORATORY`, `TIME_IN`, `
 (70, 2000, 'PHP Programming', '544', '2025-05-20 12:00:00', '2025-05-15 02:28:31'),
 (71, 2000, 'C Programming', '542', '2025-05-15 02:59:12', '2025-05-15 02:59:39'),
 (72, 2000, 'PHP Programming', '526', '2025-05-15 03:01:24', '2025-05-15 03:01:27'),
-(73, 2000, 'C++ Programming', '530', '2025-05-17 12:00:00', NULL),
-(74, 2000, 'C Programming', '524', '2025-05-20 07:30:00', NULL);
+(73, 2000, 'C++ Programming', '530', '2025-05-17 12:00:00', '2025-05-15 21:21:48'),
+(74, 2000, 'C Programming', '524', '2025-05-20 07:30:00', '2025-05-15 21:21:45'),
+(75, 2000, 'PHP Programming', '524', '2025-05-19 10:30:00', '2025-05-15 21:21:46'),
+(76, 2000, 'Python Programming', '524', '2025-05-16 09:00:00', '2025-05-15 21:21:51'),
+(77, 19894948, 'PHP Programming', '524', '2025-05-17 06:00:00', '2025-05-15 21:21:50'),
+(78, 19894948, 'Java Programming', '544', '2025-05-21 06:00:00', '2025-05-15 21:21:43'),
+(79, 22651798, 'Java Programming', '524', '2025-05-15 21:31:14', '2025-05-15 21:31:22'),
+(80, 22651798, 'Java Programming', '542', '2025-05-15 21:41:50', '2025-05-15 22:07:30'),
+(81, 22651798, 'Python Programming', '526', '2025-05-21 07:30:00', NULL),
+(82, 2000, '.Net Programming', '524', '2025-05-16 12:00:00', '2025-05-16 01:45:20'),
+(83, 2000, 'PHP', '526', '2025-05-30 12:00:00', NULL),
+(84, 22651798, 'Java Programming', '528', '2025-05-16 01:55:34', '2025-05-16 01:55:57'),
+(85, 2000, 'Digital Logic & Design', '542', '2025-05-16 01:55:49', '2025-05-16 01:55:54');
 
 -- --------------------------------------------------------
 
@@ -763,7 +833,7 @@ CREATE TABLE `user` (
   `YEAR_LEVEL` int(11) NOT NULL,
   `USERNAME` varchar(30) NOT NULL,
   `PASSWORD` varchar(255) NOT NULL,
-  `PROFILE_PIC` varchar(255) NOT NULL DEFAULT 'images/default_pic.png',
+  `PROFILE_PIC` varchar(255) NOT NULL DEFAULT '../images/default_pic.png',
   `SESSION_COUNT` int(11) DEFAULT 30,
   `POINTS` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -773,14 +843,14 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`ID`, `IDNO`, `LASTNAME`, `FIRSTNAME`, `MIDDLENAME`, `COURSE`, `YEAR_LEVEL`, `USERNAME`, `PASSWORD`, `PROFILE_PIC`, `SESSION_COUNT`, `POINTS`) VALUES
-(2, 2000, 'Doe', 'John', '', 'BSCS', 2, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 19, 8),
-(4, 3000, 'Doe', 'Jake', '', 'BSIT', 1, 'jake123', '$2y$10$.kySdo9lb7URfqAf8VZTSOyVEOfNT9aUQFZsyfHxX5T2tOIEyg0CC', 'images/default_pic.png', 25, 3),
+(2, 2000, 'Doe', 'John', '', 'BSCS', 3, 'j.doe', '$2y$10$OECVWvoX5l1zuQSXmz/LjO.Wf3t70WTI3DRb9y.TG3mbE9TLdeTo.', 'uploads/67cfba7e8a091_man-removebg-preview.png', 15, 7),
+(4, 3000, 'Doe', 'Jake', '', 'BSIT', 1, 'jake123', '$2y$10$.kySdo9lb7URfqAf8VZTSOyVEOfNT9aUQFZsyfHxX5T2tOIEyg0CC', 'images/default_pic.png', 26, 0),
 (9, 202025, 'White', 'Walter', 'Hartwell', 'BSCpE', 4, 'heisenberg', '$2y$10$QHQpJXwsI818Fe6v7z5RK.1ZaWkxKe5qYwDDqTsfQaIG1RtRwTB7S', 'uploads/681c64fb4d0e1_Omg kitty.jpg', 30, 0),
-(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', 'images/default_pic.png', 28, 2),
+(8, 2233311, 'Kujo', 'Jotaro', 'Joestar', 'BSCS', 2, 'starplatinum', '$2y$10$h.0lhVFY.XE1p.hIMmY0COXkDXBfIgZauUZZcL557aJwQj4eKeAf6', '../uploads/68262d7ebf3da_LmpwZw.png', 28, 2),
 (3, 3123052, 'Dela Cruz', 'Juan', '', 'BSCpE', 1, 'j.dela_cruz', '$2y$10$Uo.LAXxgNqAZB3zYw88TJe2Dtd7ZzAmqb53oU5N7EDl6JccM36I/u', 'uploads/67cfba1b81d48_meme-gif-pfp-9.gif', 25, 5),
-(6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$r25EqLHKI9qcm2PaeWR.ceriLWv/rLx1.sEtjL9vTJm8xx93yNfc.', 'uploads/681c6596a1c98_pexels-photo-2719416.jpeg', 29, 1),
+(6, 19894948, 'Caumeran', 'Damien', '', 'BSIT', 3, 'damskie', '$2y$10$r25EqLHKI9qcm2PaeWR.ceriLWv/rLx1.sEtjL9vTJm8xx93yNfc.', 'uploads/681c6596a1c98_pexels-photo-2719416.jpeg', 27, 3),
 (1, 20951505, 'Rafaela', 'Allen Kim', 'Calaclan', 'BSIT', 3, 'allenkim115', '$2y$10$2vP9w6uLJVF7f06XwKYqcOI0wsv3ZdIcOy5F.a8mwTZGa5iIHZNDe', 'uploads/67c929f4c620b_icegif-6567.gif', 23, 10),
-(7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$.J4.UBYjIliIiBcXATySMuaWICUWjnWmoquzeNkf3xt/M3ajpppCG', 'images/default_pic.png', 30, 0);
+(7, 22651798, 'Bustillo', 'Jarom', '', 'BSIT', 3, 'jaromy', '$2y$10$.J4.UBYjIliIiBcXATySMuaWICUWjnWmoquzeNkf3xt/M3ajpppCG', 'images/default_pic.png', 27, 3);
 
 --
 -- Indexes for dumped tables
@@ -872,13 +942,13 @@ ALTER TABLE `announcement`
 -- AUTO_INCREMENT for table `feedback`
 --
 ALTER TABLE `feedback`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `lab_resources`
 --
 ALTER TABLE `lab_resources`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `lab_schedule`
@@ -890,7 +960,7 @@ ALTER TABLE `lab_schedule`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `pc_status`
@@ -902,13 +972,13 @@ ALTER TABLE `pc_status`
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `sitin_records`
 --
 ALTER TABLE `sitin_records`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
 
 --
 -- AUTO_INCREMENT for table `user`
